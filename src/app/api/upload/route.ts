@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
+import os from "os";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,15 +19,21 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const credentialsPath = path.join(
-            process.cwd(),
-            "credentials.json"
-        );
+        const session = await getServerSession(authOptions);
+        
+        if (!session || !(session as any).accessToken) {
+            return NextResponse.json(
+                { error: "Unauthorized. Please sign in." },
+                { status: 401 }
+            );
+        }
 
-        const auth = new google.auth.GoogleAuth({
-            keyFile: credentialsPath,
-            scopes: ["https://www.googleapis.com/auth/drive"],
-        });
+        const auth = new google.auth.OAuth2(
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_CLIENT_SECRET
+        );
+        
+        auth.setCredentials({ access_token: (session as any).accessToken });
 
         const drive = google.drive({
             version: "v3",
@@ -35,8 +44,8 @@ export async function POST(req: NextRequest) {
         const buffer = Buffer.from(bytes);
 
         const tempPath = path.join(
-            process.cwd(),
-            "temp-upload.pdf"
+            os.tmpdir(),
+            `${Date.now()}-${file.name}`
         );
 
         fs.writeFileSync(tempPath, buffer);

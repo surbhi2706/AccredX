@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import type { FormEvent, ReactNode } from "react";
 
+import { useSession, signOut } from "next-auth/react";
 import DynamicForm from "@/components/DynamicForm";
 import Header from "@/components/Header";
 import Icon from "@/components/Icon";
@@ -68,27 +69,25 @@ export default function Home() {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null); const [savedMessage, setSavedMessage] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("accredx_current_user");
-    if (storedUser) {
-      try {
-        setCurrentUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem("accredx_current_user");
-      }
-    }
-    setHasCheckedAuth(true);
-  }, []);
+  const { data: session, status } = useSession();
 
-  function handleLogin(user: UserProfile) {
-    setCurrentUser(user);
-    localStorage.setItem("accredx_current_user", JSON.stringify(user));
-  }
+  useEffect(() => {
+    if (session?.user) {
+      setCurrentUser({
+        name: session.user.name || "Faculty Member",
+        email: session.user.email || "",
+        employeeId: "FAC-" + Math.floor(Math.random() * 10000), // Mocked for UI
+        designation: "Faculty",
+        department: "Department",
+        academicYear: "2025-26",
+      });
+    } else {
+      setCurrentUser(null);
+    }
+  }, [session]);
 
   function handleLogout() {
-    setCurrentUser(null);
-    localStorage.removeItem("accredx_current_user");
-    setActiveView("add-activity");
+    signOut();
   }
 
   const activities = pmsCategories[category as keyof typeof pmsCategories] || [];
@@ -109,6 +108,7 @@ export default function Home() {
     setActivity(value);
     setFormValues({});
     setEvidenceFileName("");
+    setEvidenceFile(null);
     setSavedMessage("");
   }
 
@@ -121,14 +121,33 @@ export default function Home() {
   }
 
   function handleEvidenceChange(file: File | null) {
-    if (!file) return;
-
     setEvidenceFile(file);
-    setEvidenceFileName(file.name);
+    setEvidenceFileName(file ? file.name : "");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (evidenceFile) {
+      setSavedMessage("Uploading evidence...");
+      const formData = new FormData();
+      formData.append("file", evidenceFile);
+
+      try {
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          throw new Error("Upload failed");
+        }
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        setSavedMessage("Failed to upload evidence.");
+        return;
+      }
+    }
 
     const activityPayload: SavedActivity = {
       id: Date.now(),
@@ -149,10 +168,13 @@ export default function Home() {
       ...currentActivities,
     ]);
     console.log("Activity ready for backend save:", activityPayload);
-    setSavedMessage("Activity saved in this session.");
+    setSavedMessage("Activity saved successfully.");
+    setEvidenceFile(null);
+    setEvidenceFileName("");
+    setFormValues({});
   }
 
-  if (!hasCheckedAuth) {
+  if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-slate-500">
         <div className="flex flex-col items-center gap-3">
@@ -160,14 +182,14 @@ export default function Home() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
           </svg>
-          <span className="text-sm font-semibold text-slate-600">Loading AccredX...</span>
+          <span className="text-sm font-semibold text-slate-600">Authenticating...</span>
         </div>
       </div>
     );
   }
 
-  if (!currentUser) {
-    return <LoginScreen onLogin={handleLogin} />;
+  if (status === "unauthenticated" || !currentUser) {
+    return <LoginScreen />;
   }
 
   return (
@@ -205,7 +227,7 @@ export default function Home() {
                 setCategory(value);
                 handleActivityChange("");
               }}
-              onEvidenceChange={setEvidenceFileName}
+              onEvidenceChange={handleEvidenceChange}
               onFieldChange={handleFieldChange}
               onSubmit={handleSubmit}
               onYearChange={(value) => {
@@ -262,7 +284,7 @@ type AddActivityViewProps = {
   year: string;
   onActivityChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
-  onEvidenceChange: (fileName: string) => void;
+  onEvidenceChange: (file: File | null) => void;
   onFieldChange: (fieldName: string, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onYearChange: (value: string) => void;
@@ -377,9 +399,8 @@ function AddActivityView({
                 fields={fields}
                 values={formValues}
                 evidenceFileName={evidenceFileName}
-                onChange={handleFieldChange}
-                onEvidenceChange={handleEvidenceChange}
-
+                onChange={onFieldChange}
+                onEvidenceChange={onEvidenceChange}
               />
 
               <div className="mt-8 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
