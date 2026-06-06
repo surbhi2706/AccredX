@@ -65,7 +65,7 @@ export default function Home() {
   const [activity, setActivity] = useState("");
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [evidenceFileName, setEvidenceFileName] = useState("");
-  const [savedMessage, setSavedMessage] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null); const [savedMessage, setSavedMessage] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
 
   useEffect(() => {
@@ -118,6 +118,13 @@ export default function Home() {
       [fieldName]: value,
     }));
     setSavedMessage("");
+  }
+
+  function handleEvidenceChange(file: File | null) {
+    if (!file) return;
+
+    setEvidenceFile(file);
+    setEvidenceFileName(file.name);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -370,8 +377,9 @@ function AddActivityView({
                 fields={fields}
                 values={formValues}
                 evidenceFileName={evidenceFileName}
-                onChange={onFieldChange}
-                onEvidenceChange={onEvidenceChange}
+                onChange={handleFieldChange}
+                onEvidenceChange={handleEvidenceChange}
+
               />
 
               <div className="mt-8 flex flex-col gap-4 border-t border-gray-100 pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -721,11 +729,10 @@ function MobileNav({
           key={item.id}
           type="button"
           onClick={() => onNavigate(item.id)}
-          className={`rounded-full px-4 py-2 text-sm font-black ${
-            activeView === item.id
-              ? "bg-red-600 text-white"
-              : "border border-red-100 bg-white text-gray-700"
-          }`}
+          className={`rounded-full px-4 py-2 text-sm font-black ${activeView === item.id
+            ? "bg-red-600 text-white"
+            : "border border-red-100 bg-white text-gray-700"
+            }`}
         >
           {item.label}
         </button>
@@ -775,11 +782,10 @@ function ActivityListItem({ activity }: { activity: SavedActivity }) {
           {activity.createdAt}
         </span>
         <span
-          className={`rounded-full px-3 py-1 ${
-            activity.evidenceFileName
-              ? "bg-emerald-50 text-emerald-700"
-              : "bg-amber-50 text-amber-700"
-          }`}
+          className={`rounded-full px-3 py-1 ${activity.evidenceFileName
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-amber-50 text-amber-700"
+            }`}
         >
           {activity.evidenceFileName ? "Evidence attached" : "No evidence"}
         </span>
