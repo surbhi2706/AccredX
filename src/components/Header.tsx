@@ -33,18 +33,7 @@ export default function Header({ subtitle, title }: HeaderProps) {
             <span className="text-xs font-black uppercase tracking-wider">SSL Secure</span>
           </div>
 
-          {/* Quick Notification Button */}
-          <button
-            type="button"
-            className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-gray-250 bg-white text-gray-600 shadow-sm transition hover:bg-red-50 hover:text-red-600"
-            aria-label="View notifications"
-          >
-            <Icon name="bell" className="h-5 w-5" />
-            <span className="absolute right-2.5 top-2.5 flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500"></span>
-            </span>
-          </button>
+
 
           {/* Quick Info Button */}
           <button
