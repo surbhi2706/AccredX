@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         }
 
         const session = await getServerSession(authOptions);
-        
+
         if (!session || !(session as any).accessToken) {
             return NextResponse.json(
                 { error: "Unauthorized. Please sign in." },
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET
         );
-        
+
         auth.setCredentials({ access_token: (session as any).accessToken });
 
         const drive = google.drive({
@@ -53,7 +53,6 @@ export async function POST(req: NextRequest) {
         const response = await drive.files.create({
             requestBody: {
                 name: file.name,
-                parents: [process.env.GOOGLE_DRIVE_FOLDER_ID!],
             },
             media: {
                 mimeType: file.type,
