@@ -10,7 +10,7 @@ interface DynamicFormProps {
   values: FormValues;
   evidenceFileName: string;
   onChange: (fieldName: string, value: string) => void;
-  onEvidenceChange: (fileName: string) => void;
+  onEvidenceChange: (file: File | null) => void;
 }
 
 export default function DynamicForm({
@@ -121,8 +121,9 @@ export default function DynamicForm({
           <input
             id="evidence"
             type="file"
+            accept=".pdf,.doc,.docx,image/*"
             onChange={(event) =>
-              onEvidenceChange(event.target.files?.[0]?.name ?? "")
+              onEvidenceChange(event.target.files?.[0] || null)
             }
             className="sr-only"
           />
