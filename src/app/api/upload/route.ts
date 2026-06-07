@@ -50,9 +50,34 @@ export async function POST(req: NextRequest) {
 
         fs.writeFileSync(tempPath, buffer);
 
+        const folderName = "AccredX Repository";
+        let folderId = null;
+
+        const folderSearch = await drive.files.list({
+            q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
+            fields: "files(id, name)",
+            spaces: "drive",
+        });
+
+        if (folderSearch.data.files && folderSearch.data.files.length > 0) {
+            folderId = folderSearch.data.files[0].id;
+            console.log("Folder found");
+        } else {
+            const folderCreate = await drive.files.create({
+                requestBody: {
+                    name: folderName,
+                    mimeType: "application/vnd.google-apps.folder",
+                },
+                fields: "id",
+            });
+            folderId = folderCreate.data.id;
+            console.log("Folder created");
+        }
+
         const response = await drive.files.create({
             requestBody: {
                 name: file.name,
+                parents: folderId ? [folderId] : undefined,
             },
             media: {
                 mimeType: file.type,
@@ -62,9 +87,12 @@ export async function POST(req: NextRequest) {
 
         fs.unlinkSync(tempPath);
 
+        console.log("Upload successful");
+
         return NextResponse.json({
             success: true,
             fileId: response.data.id,
+            folderId: folderId,
         });
     } catch (error) {
         console.error(error);
