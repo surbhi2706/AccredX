@@ -7,37 +7,28 @@ export const pmsCategories = {
   ],
 
   "Research & Academic Contributions": [
-    "Research Paper / Publication",
-    "Patent",
-    "Funded Project",
-    "Research Grant",
-    "Consultancy",
-    "Research Collaboration / MoU",
+    "Journal Publications",
+    "Conference Publications & Participation",
+    "Books & Book Chapters",
+    "Research Grants & Sponsored Projects",
+    "Patents & Copyrights",
+    "Review Work / Editorial Activities",
+    "Research Supervision",
   ],
 
   "Institution Building & Professional Development": [
-    "FDP / Training Attended",
-    "Event / FDP Organized",
-    "Guest Lecture",
-    "Professional Society Activity",
-  ],
-
-  "Administrative / Committee Work": [
-    "Committee Role",
-    "Coordinator Role",
-    "NBA / NAAC Activity",
-  ],
-
-  "Award / Recognition": [
-    "Faculty Achievement",
-    "Student Achievement",
-    "Award / Recognition",
+    "Student Activities / Events Organized",
+    "Faculty Development Activities Organized",
+    "Interaction with Outside World",
+    "Administrative / Committee Work",
+    "Contribution to Society",
   ],
 
   "Skill Enhancement & Miscellaneous": [
-    "NPTEL Certification",
-    "MOOC Certification",
-    "Hackathon",
-    "Innovation / Startup Activity",
+    "FDP / Training Programs Attended",
+    "MOOCs / Online Certifications",
+    "Professional Qualification / Postdoc / Special Achievement",
+    "Awards & Recognition",
+    "Consultancy Projects",
   ],
 };

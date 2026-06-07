@@ -41,6 +41,20 @@ const getNBACriteria = (category: string) => {
   }
 };
 
+const getNBASectionCode = (criterionCode: string, pmsCategory: string): string => {
+  const code = (criterionCode || "").trim();
+  if (code.includes("2") || code.includes("3")) return "Criteria 2";
+  if (code.includes("4") || code.includes("5")) return "Criteria 5";
+  if (code.includes("6") || code.includes("7") || code.includes("8")) return "Criteria 8";
+  
+  // Fallback to category level mapping
+  const cat = pmsCategory || "";
+  if (cat.includes("Teaching")) return "Criteria 2";
+  if (cat.includes("Research") || cat.includes("Skill") || cat.includes("Award")) return "Criteria 5";
+  if (cat.includes("Institution") || cat.includes("Administrative")) return "Criteria 8";
+  return "Criteria 2";
+};
+
 export default function ReportPreviewModal({
   reportType,
   activities,
@@ -386,7 +400,7 @@ export default function ReportPreviewModal({
                       <div className="grid gap-4 sm:grid-cols-3">
                         {nbaCriteriaList.map((crit) => {
                           const matchingActs = filteredActivities.filter(
-                            (act) => act.pmsCategory === crit.keyCat
+                            (act) => getNBASectionCode(act.data.nbaCriterion, act.pmsCategory) === crit.code
                           );
                           const isCompliant = matchingActs.length > 0;
 
@@ -440,13 +454,15 @@ export default function ReportPreviewModal({
                           <tbody>
                             {filteredActivities.map((act) => {
                               const criteria = getNBACriteria(act.pmsCategory);
+                              const displayCode = act.data.nbaCriterion || criteria.code;
+                              const displayName = act.data.nbaSubCriterion || criteria.name;
                               return (
                                 <tr key={act.id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/40">
                                   <td className="py-3 font-black text-red-700 align-top">
-                                    {criteria.code}
+                                    {displayCode}
                                   </td>
                                   <td className="py-3 font-extrabold text-slate-800 align-top pr-3">
-                                    {criteria.name}
+                                    {displayName}
                                     <p className="text-[10px] font-bold text-gray-400 mt-0.5">{act.activityType}</p>
                                   </td>
                                   <td className="py-3 align-top text-gray-600">

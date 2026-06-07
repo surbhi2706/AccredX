@@ -6,6 +6,7 @@ import type { FormEvent, ReactNode } from "react";
 import { useSession, signOut } from "next-auth/react";
 import DynamicForm from "@/components/DynamicForm";
 import Header from "@/components/Header";
+import { pmsMapping, getDetailedActivities } from "@/data/pmsMapping";
 import Icon from "@/components/Icon";
 import Sidebar from "@/components/Sidebar";
 import type { ViewId } from "@/components/Sidebar";
@@ -14,6 +15,7 @@ import type { UserProfile } from "@/components/LoginScreen";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import { pmsCategories } from "@/data/categories";
 import { activityFields } from "@/data/formFields";
+import type { ActivityField } from "@/data/formFields";
 
 const academicYears = ["2025-26", "2024-25", "2023-24"];
 
@@ -63,6 +65,11 @@ export default function Home() {
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
   const [year, setYear] = useState("");
   const [category, setCategory] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+
+const [selectedActivityType, setSelectedActivityType] = useState("");
+
+const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(null);
   const [activity, setActivity] = useState("");
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [evidenceFileName, setEvidenceFileName] = useState("");
@@ -91,7 +98,26 @@ export default function Home() {
   }
 
   const activities = pmsCategories[category as keyof typeof pmsCategories] || [];
-  const fields = activityFields[activity as keyof typeof activityFields] || [];
+  const rawFields = activityFields[selectedDetailedActivity?.activity as keyof typeof activityFields] || [];
+
+  const fields = selectedDetailedActivity ? [
+    ...rawFields,
+    {
+      name: "nbaCriterion",
+      label: "Auto-Mapped NBA Criterion",
+      type: "text" as const,
+      disabled: true,
+      required: false,
+    },
+    {
+      name: "nbaSubCriterion",
+      label: "Auto-Mapped NBA Subcriterion",
+      type: "text" as const,
+      disabled: true,
+      required: false,
+    }
+  ] : rawFields;
+
   const completedSteps = [year, category, activity].filter(Boolean).length;
   const header = viewCopy[activeView];
 
@@ -106,6 +132,7 @@ export default function Home() {
 
   function handleActivityChange(value: string) {
     setActivity(value);
+    setSelectedDetailedActivity(null);
     setFormValues({});
     setEvidenceFileName("");
     setEvidenceFile(null);
@@ -213,28 +240,48 @@ export default function Home() {
 
           {activeView === "add-activity" ? (
             <AddActivityView
-              activity={activity}
-              activities={activities}
-              category={category}
-              completedSteps={completedSteps}
-              evidenceFileName={evidenceFileName}
-              fields={fields}
-              formValues={formValues}
-              savedMessage={savedMessage}
-              year={year}
-              onActivityChange={handleActivityChange}
-              onCategoryChange={(value) => {
-                setCategory(value);
-                handleActivityChange("");
-              }}
-              onEvidenceChange={handleEvidenceChange}
-              onFieldChange={handleFieldChange}
-              onSubmit={handleSubmit}
-              onYearChange={(value) => {
-                setYear(value);
-                setSavedMessage("");
-              }}
-            />
+  activity={activity}
+  activities={activities}
+  category={category}
+  selectedDetailedActivity={selectedDetailedActivity}
+  pmsMapping={pmsMapping}
+  completedSteps={completedSteps}
+  evidenceFileName={evidenceFileName}
+  fields={fields}
+  formValues={formValues}
+  savedMessage={savedMessage}
+  year={year}
+  onActivityChange={(value) => {
+    handleActivityChange(value);
+    setSelectedDetailedActivity(null);
+  }}
+  onCategoryChange={(value) => {
+    setCategory(value);
+    handleActivityChange("");
+    setSelectedDetailedActivity(null);
+  }}
+  onDetailedActivityChange={(item) => {
+    setSelectedDetailedActivity(item);
+    setEvidenceFileName("");
+    setEvidenceFile(null);
+    if (item) {
+      setFormValues({
+        detailedActivity: item.activity || "",
+        nbaCriterion: item.nba || "",
+        nbaSubCriterion: item.subCriterion || "",
+      });
+    } else {
+      setFormValues({});
+    }
+  }}
+  onEvidenceChange={handleEvidenceChange}
+  onFieldChange={handleFieldChange}
+  onSubmit={handleSubmit}
+  onYearChange={(value) => {
+    setYear(value);
+    setSavedMessage("");
+  }}
+/>
           ) : null}
 
           {activeView === "my-activities" ? (
@@ -276,9 +323,12 @@ type AddActivityViewProps = {
   activity: string;
   activities: string[];
   category: string;
+  selectedDetailedActivity: any;
+pmsMapping: typeof import("@/data/pmsMapping").pmsMapping;
+onDetailedActivityChange: (item: any) => void;
   completedSteps: number;
   evidenceFileName: string;
-  fields: typeof activityFields[string];
+  fields: ActivityField[];
   formValues: Record<string, string>;
   savedMessage: string;
   year: string;
@@ -294,6 +344,9 @@ function AddActivityView({
   activity,
   activities,
   category,
+  selectedDetailedActivity,
+pmsMapping,
+onDetailedActivityChange,
   completedSteps,
   evidenceFileName,
   fields,
@@ -391,9 +444,42 @@ function AddActivityView({
                 ))}
               </select>
             </SelectionField>
+            {activity && category && (
+  <SelectionField
+    icon="spark"
+    label="Detailed Activity"
+    color="text-violet-600 bg-violet-50"
+  >
+    <select
+      value={selectedDetailedActivity?.activity || ""}
+      onChange={(event) => {
+        const selectedActivities = getDetailedActivities(category, activity);
+        const selected = selectedActivities.find(
+          (item: any) => item.activity === event.target.value
+        );
+        onDetailedActivityChange(selected);
+      }}
+      className={selectClass}
+      required
+    >
+      <option value="">
+        Select detailed activity
+      </option>
+
+      {getDetailedActivities(category, activity).map((item: any) => (
+        <option
+          key={item.activity}
+          value={item.activity}
+        >
+          {item.activity}
+        </option>
+      ))}
+    </select>
+  </SelectionField>
+)}
           </div>
 
-          {activity ? (
+          {activity && selectedDetailedActivity ? (
             <>
               <DynamicForm
                 fields={fields}
@@ -424,8 +510,8 @@ function AddActivityView({
           ) : (
             <EmptyState
               icon="clipboard"
-              title="Select an activity type"
-              text="The relevant form fields will appear here."
+              title={activity ? "Select a detailed activity" : "Select an activity type"}
+              text="The relevant form fields will appear here after selection."
             />
           )}
         </div>

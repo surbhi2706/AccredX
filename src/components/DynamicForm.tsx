@@ -21,7 +21,7 @@ export default function DynamicForm({
   onEvidenceChange,
 }: DynamicFormProps) {
   const baseClass =
-    "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50";
+    "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-gray-900 shadow-sm outline-none transition placeholder:text-gray-400 hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50 disabled:bg-slate-50 disabled:text-slate-500 disabled:cursor-not-allowed";
 
   return (
     <div className="space-y-8">
@@ -58,6 +58,7 @@ export default function DynamicForm({
                   onChange={(event) => onChange(field.name, event.target.value)}
                   placeholder={field.placeholder ?? `Enter ${field.label}`}
                   required={field.required}
+                  disabled={field.disabled}
                   rows={4}
                   className={`${baseClass} resize-none leading-6`}
                 />
@@ -67,6 +68,7 @@ export default function DynamicForm({
                   value={values[field.name] ?? ""}
                   onChange={(event) => onChange(field.name, event.target.value)}
                   required={field.required}
+                  disabled={field.disabled}
                   className={baseClass}
                 >
                   <option value="">Select {field.label}</option>
@@ -84,6 +86,7 @@ export default function DynamicForm({
                   onChange={(event) => onChange(field.name, event.target.value)}
                   placeholder={field.placeholder ?? `Enter ${field.label}`}
                   required={field.required}
+                  disabled={field.disabled}
                   className={baseClass}
                 />
               )}
