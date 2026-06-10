@@ -138,11 +138,11 @@ export default function ReportPreviewModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 no-print">
-      <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 print:absolute print:inset-0 print:bg-transparent print:p-0 print:backdrop-blur-none print:block print:w-full print:h-auto print:static">
+      <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl print:border-none print:shadow-none print:w-full print:max-w-none print:h-auto print:max-h-none print:overflow-visible print:bg-transparent">
         
         {/* Modal Controls Header */}
-        <header className="flex flex-col gap-4 border-b border-gray-100 bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between">
+        <header className="flex flex-col gap-4 border-b border-gray-100 bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between print:hidden">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
               <Icon name="chart" className="h-5 w-5" />
@@ -218,8 +218,8 @@ export default function ReportPreviewModal({
         </header>
 
         {/* Modal Scroll Content (Printable Area) */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 print-container">
-          <div id="report-content" className="mx-auto max-w-4xl border border-gray-100 bg-white p-6 shadow-sm rounded-2xl md:p-8">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 print-container print:overflow-visible print:p-0">
+          <div id="report-content" className="mx-auto max-w-4xl border border-gray-100 bg-white p-6 shadow-sm rounded-2xl md:p-8 print:border-none print:shadow-none print:rounded-none print:p-0 print:max-w-none">
             
             {/* Institution Header */}
             <div className="border-b-2 border-red-700 pb-5 text-center">

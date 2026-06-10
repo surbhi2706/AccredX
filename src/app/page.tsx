@@ -169,11 +169,12 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
         });
 
         if (!res.ok) {
-          throw new Error("Upload failed");
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.details || errData.error || "Upload failed");
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error uploading file:", error);
-        setSavedMessage("Failed to upload evidence.");
+        setSavedMessage(`Failed to upload evidence: ${error.message || "Unknown error"}`);
         return;
       }
     }
@@ -225,7 +226,7 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#fff_0%,#fff7f7_45%,#f8fafc_100%)] text-gray-950">
       <Sidebar activeView={activeView} onNavigate={setActiveView} user={currentUser} onLogout={handleLogout} />
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 print:hidden">
         <Header title={header.title} subtitle={header.subtitle} />
 
         <main className="mx-auto max-w-7xl px-5 py-6 md:px-8">

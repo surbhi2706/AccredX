@@ -19,7 +19,16 @@ body {
   font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
+@page {
+  size: auto;
+  margin: 0 !important; /* Hides default browser header (timestamp) and footer (localhost URL) */
+}
+
 @media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
   body * {
     visibility: hidden;
   }
@@ -32,7 +41,8 @@ body {
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 0;
+    padding: 15mm; /* Generates safe margins inside the page area */
+    box-sizing: border-box;
   }
   .no-print {
     display: none !important;

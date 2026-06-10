@@ -94,11 +94,14 @@ export async function POST(req: NextRequest) {
             fileId: response.data.id,
             folderId: folderId,
         });
-    } catch (error) {
-        console.error(error);
+    } catch (error: any) {
+        console.error("Error during file upload:", error);
 
         return NextResponse.json(
-            { error: "Upload failed" },
+            { 
+                error: "Upload failed", 
+                details: error?.message || error?.toString() || "Unknown error"
+            },
             { status: 500 }
         );
     }

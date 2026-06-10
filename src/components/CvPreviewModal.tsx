@@ -87,9 +87,9 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
   const grouped = groupActivities(activities);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 no-print">
-      <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl">
-        <header className="flex flex-col gap-4 border-b border-gray-100 bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 print:absolute print:inset-0 print:bg-transparent print:p-0 print:backdrop-blur-none print:block print:w-full print:h-auto print:static">
+      <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl print:border-none print:shadow-none print:w-full print:max-w-none print:h-auto print:max-h-none print:overflow-visible print:bg-transparent">
+        <header className="flex flex-col gap-4 border-b border-gray-100 bg-slate-50 px-6 py-4 md:flex-row md:items-center md:justify-between print:hidden">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
               <Icon name="file" className="h-5 w-5" />
@@ -115,7 +115,12 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
             </button>
 
             <button
-              onClick={() => handleExportReport("Somaiya CV")}
+              onClick={() => {
+                const nameStr = profile?.fullName
+                  ? profile.fullName.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
+                  : "Faculty";
+                handleExportReport("Somaiya CV", `${nameStr}_CV`);
+              }}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-150 transition hover:bg-red-700"
             >
@@ -136,8 +141,8 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 print-container">
-          <div id="report-content" className="mx-auto max-w-4xl bg-white p-6 md:p-12 text-slate-900 font-sans">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 print-container print:overflow-visible print:p-0">
+          <div id="report-content" className="mx-auto max-w-4xl bg-white p-6 md:p-12 text-slate-900 font-sans print:p-0 print:max-w-none">
             
             {/* CV Header */}
             <div className="border-b-2 border-red-800 pb-6 mb-8 text-center md:text-left flex flex-col md:flex-row md:justify-between md:items-end">

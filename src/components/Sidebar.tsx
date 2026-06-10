@@ -34,7 +34,7 @@ export default function Sidebar({ activeView, onNavigate, user, onLogout }: Side
     : "U";
 
   return (
-    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-red-100 bg-white/95 px-5 py-6 shadow-[8px_0_30px_rgba(185,28,28,0.04)] lg:flex lg:flex-col">
+    <aside className="hidden min-h-screen w-72 shrink-0 border-r border-red-100 bg-white/95 px-5 py-6 shadow-[8px_0_30px_rgba(185,28,28,0.04)] lg:flex lg:flex-col print:hidden">
       <div className="mb-8 flex items-center gap-3 rounded-2xl border border-red-100 bg-gradient-to-br from-white to-red-50 p-4">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg shadow-red-200">
           <Icon name="shield" className="h-6 w-6" />
