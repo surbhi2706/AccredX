@@ -9,6 +9,7 @@ type IconProps = {
     | "chart"
     | "check"
     | "clipboard"
+    | "edit"
     | "education"
     | "file"
     | "grid"
@@ -18,6 +19,7 @@ type IconProps = {
     | "plus"
     | "shield"
     | "spark"
+    | "trash"
     | "upload"
     | "user";
   className?: string;
@@ -70,6 +72,11 @@ const paths: Record<IconProps["name"], ReactNode> = {
       <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
       <path d="M8 12h8" />
       <path d="M8 16h5" />
+    </>
+  ),
+  edit: (
+    <>
+      <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
     </>
   ),
   education: (
@@ -136,6 +143,13 @@ const paths: Record<IconProps["name"], ReactNode> = {
       <path d="M17 12h5" />
       <path d="m4.93 19.07 3.53-3.53" />
       <path d="m15.54 8.46 3.53-3.53" />
+    </>
+  ),
+  trash: (
+    <>
+      <path d="M3 6h18" />
+      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
     </>
   ),
   upload: (

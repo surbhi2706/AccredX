@@ -13,6 +13,8 @@ import type { ViewId } from "@/components/Sidebar";
 import LoginScreen from "@/components/LoginScreen";
 import type { UserProfile } from "@/components/LoginScreen";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
+import CvPreviewModal from "@/components/CvPreviewModal";
+import ProfileForm from "@/components/ProfileForm";
 import { pmsCategories } from "@/data/categories";
 import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
@@ -59,7 +61,7 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [previewReportType, setPreviewReportType] = useState<
-    "PMS Report" | "NBA Summary" | "Annual Report" | null
+    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | null
   >(null);
 
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
@@ -297,21 +299,23 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
           ) : null}
 
           {activeView === "profile" ? (
-            <ProfileView
-              activities={savedActivities}
-              completedFields={completedFields}
-              evidenceUploads={evidenceUploads}
-              user={currentUser}
-            />
+            <ProfileForm user={currentUser} />
           ) : null}
         </main>
       </div>
 
-      {previewReportType && (
+      {previewReportType && previewReportType !== "Somaiya CV" && (
         <ReportPreviewModal
-          reportType={previewReportType}
+          reportType={previewReportType as any}
           activities={savedActivities}
           user={currentUser}
+          onClose={() => setPreviewReportType(null)}
+        />
+      )}
+
+      {previewReportType === "Somaiya CV" && (
+        <CvPreviewModal
+          activities={savedActivities}
           onClose={() => setPreviewReportType(null)}
         />
       )}
@@ -681,12 +685,13 @@ function ReportsView({
 }: {
   activities: SavedActivity[];
   evidenceUploads: number;
-  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report") => void;
+  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV") => void;
 }) {
   const reportCards = [
     { title: "PMS Report", icon: "layers", color: "text-red-600 bg-red-50" },
     { title: "NBA Summary", icon: "award", color: "text-amber-600 bg-amber-50" },
     { title: "Annual Report", icon: "chart", color: "text-violet-650 bg-violet-50" },
+    { title: "Somaiya CV", icon: "file", color: "text-sky-600 bg-sky-50" },
   ] as const;
 
   return (
@@ -716,66 +721,6 @@ function ReportsView({
   );
 }
 
-function ProfileView({
-  activities,
-  completedFields,
-  evidenceUploads,
-  user,
-}: {
-  activities: SavedActivity[];
-  completedFields: number;
-  evidenceUploads: number;
-  user: UserProfile;
-}) {
-  return (
-    <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
-      <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
-        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-600 text-white shadow-lg shadow-red-100">
-          <Icon name="user" className="h-7 w-7" />
-        </div>
-        <h2 className="text-2xl font-black tracking-tight text-gray-950">
-          {user.name}
-        </h2>
-        <p className="mt-1 text-sm font-semibold text-gray-500">
-          {user.department}
-        </p>
-
-        <div className="mt-6 space-y-4">
-          <ProfileRow label="Employee ID" value={user.employeeId} />
-          <ProfileRow label="Designation" value={user.designation} />
-          <ProfileRow label="Academic Year" value={user.academicYear} />
-          <ProfileRow label="Email" value={user.email} />
-        </div>
-      </section>
-
-      <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
-        <h2 className="text-xl font-black tracking-tight text-gray-950">
-          Contribution Summary
-        </h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-3">
-          <MetricCard
-            color="text-red-600 bg-red-50"
-            icon="clipboard"
-            label="Activities"
-            value={String(activities.length)}
-          />
-          <MetricCard
-            color="text-emerald-600 bg-emerald-50"
-            icon="upload"
-            label="Evidence"
-            value={String(evidenceUploads)}
-          />
-          <MetricCard
-            color="text-sky-600 bg-sky-50"
-            icon="file"
-            label="Data Points"
-            value={String(completedFields)}
-          />
-        </div>
-      </section>
-    </div>
-  );
-}
 
 type SelectionFieldProps = {
   children: ReactNode;
@@ -947,13 +892,3 @@ function SnapshotRow({
   );
 }
 
-function ProfileRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-400">
-        {label}
-      </p>
-      <p className="mt-1 text-sm font-bold text-gray-900">{value}</p>
-    </div>
-  );
-}

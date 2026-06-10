@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Icon from "@/components/Icon";
 import type { UserProfile } from "@/components/LoginScreen";
+import { handleExportReport } from "@/utils/export";
 
 type SavedActivity = {
   id: number;
@@ -92,9 +93,7 @@ export default function ReportPreviewModal({
     { code: "Criteria 8", title: "Institutional Support & Governance", keyCat: "Institution Building & Professional Development" },
   ];
 
-  function handlePrint() {
-    window.print();
-  }
+  // handleExportCSV implementation remains below
 
   function handleExportCSV() {
     const headers = [
@@ -140,34 +139,6 @@ export default function ReportPreviewModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 no-print">
-      {/* Injected Print Stylesheet */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-          @media print {
-            body {
-              background: white !important;
-              color: black !important;
-            }
-            .no-print {
-              display: none !important;
-            }
-            .print-container {
-              position: absolute;
-              left: 0;
-              top: 0;
-              width: 100%;
-              padding: 0 !important;
-              margin: 0 !important;
-              box-shadow: none !important;
-              border: none !important;
-              background: white !important;
-            }
-          }
-        `,
-        }}
-      />
-
       <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-white shadow-2xl">
         
         {/* Modal Controls Header */}
@@ -223,7 +194,7 @@ export default function ReportPreviewModal({
 
             {/* Print button */}
             <button
-              onClick={handlePrint}
+              onClick={() => handleExportReport(reportType)}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-150 transition hover:bg-red-700"
             >
@@ -248,7 +219,7 @@ export default function ReportPreviewModal({
 
         {/* Modal Scroll Content (Printable Area) */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 print-container">
-          <div id="printable-report-area" className="mx-auto max-w-4xl border border-gray-100 bg-white p-6 shadow-sm rounded-2xl md:p-8">
+          <div id="report-content" className="mx-auto max-w-4xl border border-gray-100 bg-white p-6 shadow-sm rounded-2xl md:p-8">
             
             {/* Institution Header */}
             <div className="border-b-2 border-red-700 pb-5 text-center">
