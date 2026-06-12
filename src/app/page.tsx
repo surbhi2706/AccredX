@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { useSession, signOut } from "next-auth/react";
 import DynamicForm from "@/components/DynamicForm";
 import Header from "@/components/Header";
-import { pmsMapping, getDetailedActivities } from "@/data/pmsMapping";
+import {
+  findDetailedActivity,
+  getActivityGroups,
+  getPmsCategories,
+  pmsCategoryMeta,
+  pmsSectionGuidance,
+} from "@/data/pmsMapping";
+import type { PmsDetailedActivity } from "@/data/pmsMapping";
 import Icon from "@/components/Icon";
 import Sidebar from "@/components/Sidebar";
 import type { ViewId } from "@/components/Sidebar";
@@ -15,7 +22,6 @@ import type { UserProfile } from "@/components/LoginScreen";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import CvPreviewModal from "@/components/CvPreviewModal";
 import ProfileForm from "@/components/ProfileForm";
-import { pmsCategories } from "@/data/categories";
 import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
 
@@ -51,15 +57,15 @@ type SavedActivity = {
   id: number;
   academicYear: string;
   pmsCategory: string;
+  pmsSection: string;
   activityType: string;
   data: Record<string, string>;
   evidenceFileName: string;
+  evidenceFileId: string;
   createdAt: string;
 };
 
 export default function Home() {
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [previewReportType, setPreviewReportType] = useState<
     "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | null
   >(null);
@@ -67,60 +73,65 @@ export default function Home() {
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
   const [year, setYear] = useState("");
   const [category, setCategory] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-
-const [selectedActivityType, setSelectedActivityType] = useState("");
-
-const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(null);
+  const [selectedDetailedActivity, setSelectedDetailedActivity] =
+    useState<PmsDetailedActivity | null>(null);
   const [activity, setActivity] = useState("");
   const [formValues, setFormValues] = useState<Record<string, string>>({});
   const [evidenceFileName, setEvidenceFileName] = useState("");
-  const [evidenceFile, setEvidenceFile] = useState<File | null>(null); const [savedMessage, setSavedMessage] = useState("");
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [savedMessage, setSavedMessage] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
 
   const { data: session, status } = useSession();
-
-  useEffect(() => {
-    if (session?.user) {
-      setCurrentUser({
+  const currentUser: UserProfile | null = session?.user
+    ? {
         name: session.user.name || "Faculty Member",
         email: session.user.email || "",
-        employeeId: "FAC-" + Math.floor(Math.random() * 10000), // Mocked for UI
+        employeeId: "FAC-0000",
         designation: "Faculty",
         department: "Department",
         academicYear: "2025-26",
-      });
-    } else {
-      setCurrentUser(null);
-    }
-  }, [session]);
+      }
+    : null;
 
   function handleLogout() {
     signOut();
   }
 
-  const activities = pmsCategories[category as keyof typeof pmsCategories] || [];
+  const activityGroups = getActivityGroups(category);
   const rawFields = activityFields[selectedDetailedActivity?.activity as keyof typeof activityFields] || [];
 
-  const fields = selectedDetailedActivity ? [
-    ...rawFields,
-    {
-      name: "nbaCriterion",
-      label: "Auto-Mapped NBA Criterion",
-      type: "text" as const,
-      disabled: true,
-      required: false,
-    },
-    {
-      name: "nbaSubCriterion",
-      label: "Auto-Mapped NBA Subcriterion",
-      type: "text" as const,
-      disabled: true,
-      required: false,
-    }
-  ] : rawFields;
+  const fields: ActivityField[] = selectedDetailedActivity
+    ? [
+        ...rawFields,
+        {
+          name: "selfAssessedMarks",
+          label: "Self-Assessed PMS Marks",
+          type: "number",
+          min: 0,
+          max: pmsCategoryMeta[category]?.maxMarks,
+          helperText:
+            "Enter the marks you are claiming. Final marks remain subject to department and college assessment.",
+          required: true,
+        },
+        {
+          name: "nbaCriterion",
+          label: "Auto-Mapped NBA Criterion",
+          type: "text",
+          disabled: true,
+          required: false,
+        },
+        {
+          name: "nbaSubCriterion",
+          label: "Auto-Mapped NBA Subcriterion",
+          type: "text",
+          disabled: true,
+          required: false,
+        },
+      ]
+    : rawFields;
 
-  const completedSteps = [year, category, activity].filter(Boolean).length;
+  const completedSteps = [year, category, selectedDetailedActivity].filter(Boolean).length;
   const header = viewCopy[activeView];
 
   const evidenceUploads = savedActivities.filter(
@@ -157,6 +168,8 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    let evidenceFileId = "";
+
     if (evidenceFile) {
       setSavedMessage("Uploading evidence...");
       const formData = new FormData();
@@ -172,9 +185,14 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.details || errData.error || "Upload failed");
         }
-      } catch (error: any) {
+
+        const uploadResult = await res.json();
+        evidenceFileId = uploadResult.fileId || "";
+      } catch (error: unknown) {
         console.error("Error uploading file:", error);
-        setSavedMessage(`Failed to upload evidence: ${error.message || "Unknown error"}`);
+        const message =
+          error instanceof Error ? error.message : "Unknown error";
+        setSavedMessage(`Failed to upload evidence: ${message}`);
         return;
       }
     }
@@ -183,9 +201,11 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
       id: Date.now(),
       academicYear: year,
       pmsCategory: category,
-      activityType: activity,
+      pmsSection: selectedDetailedActivity?.section || "",
+      activityType: selectedDetailedActivity?.activity || activity,
       data: formValues,
       evidenceFileName,
+      evidenceFileId,
       createdAt: new Date().toLocaleDateString("en-IN", {
         day: "2-digit",
         month: "short",
@@ -244,10 +264,9 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
           {activeView === "add-activity" ? (
             <AddActivityView
   activity={activity}
-  activities={activities}
+  activityGroups={activityGroups}
   category={category}
   selectedDetailedActivity={selectedDetailedActivity}
-  pmsMapping={pmsMapping}
   completedSteps={completedSteps}
   evidenceFileName={evidenceFileName}
   fields={fields}
@@ -256,26 +275,21 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
   year={year}
   onActivityChange={(value) => {
     handleActivityChange(value);
-    setSelectedDetailedActivity(null);
+    const selected = findDetailedActivity(category, value);
+    setSelectedDetailedActivity(selected);
+    if (selected) {
+      setFormValues({
+        detailedActivity: selected.activity,
+        pmsSection: selected.section,
+        nbaCriterion: selected.nba,
+        nbaSubCriterion: selected.subCriterion,
+      });
+    }
   }}
   onCategoryChange={(value) => {
     setCategory(value);
     handleActivityChange("");
     setSelectedDetailedActivity(null);
-  }}
-  onDetailedActivityChange={(item) => {
-    setSelectedDetailedActivity(item);
-    setEvidenceFileName("");
-    setEvidenceFile(null);
-    if (item) {
-      setFormValues({
-        detailedActivity: item.activity || "",
-        nbaCriterion: item.nba || "",
-        nbaSubCriterion: item.subCriterion || "",
-      });
-    } else {
-      setFormValues({});
-    }
   }}
   onEvidenceChange={handleEvidenceChange}
   onFieldChange={handleFieldChange}
@@ -307,7 +321,7 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
 
       {previewReportType && previewReportType !== "Somaiya CV" && (
         <ReportPreviewModal
-          reportType={previewReportType as any}
+          reportType={previewReportType}
           activities={savedActivities}
           user={currentUser}
           onClose={() => setPreviewReportType(null)}
@@ -326,11 +340,9 @@ const [selectedDetailedActivity, setSelectedDetailedActivity] = useState<any>(nu
 
 type AddActivityViewProps = {
   activity: string;
-  activities: string[];
+  activityGroups: ReturnType<typeof getActivityGroups>;
   category: string;
-  selectedDetailedActivity: any;
-pmsMapping: typeof import("@/data/pmsMapping").pmsMapping;
-onDetailedActivityChange: (item: any) => void;
+  selectedDetailedActivity: PmsDetailedActivity | null;
   completedSteps: number;
   evidenceFileName: string;
   fields: ActivityField[];
@@ -347,11 +359,9 @@ onDetailedActivityChange: (item: any) => void;
 
 function AddActivityView({
   activity,
-  activities,
+  activityGroups,
   category,
   selectedDetailedActivity,
-pmsMapping,
-onDetailedActivityChange,
   completedSteps,
   evidenceFileName,
   fields,
@@ -421,9 +431,9 @@ onDetailedActivityChange,
                 className={selectClass}
               >
                 <option value="">Select category</option>
-                {Object.keys(pmsCategories).map((cat) => (
+                {getPmsCategories().map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat}
+                    {cat} ({pmsCategoryMeta[cat]?.maxMarks ?? 0} marks)
                   </option>
                 ))}
               </select>
@@ -431,7 +441,7 @@ onDetailedActivityChange,
 
             <SelectionField
               icon="spark"
-              label="Activity Type"
+              label="PMS Detailed Activity"
               color="text-amber-600 bg-amber-50"
             >
               <select
@@ -441,55 +451,29 @@ onDetailedActivityChange,
                 required
                 className={selectClass}
               >
-                <option value="">Select activity</option>
-                {activities.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
+                <option value="">Select detailed activity</option>
+                {activityGroups.map((group) => (
+                  <optgroup key={group.section} label={group.section}>
+                    {group.activities.map((item) => (
+                      <option key={item.activity} value={item.activity}>
+                        {item.activity}
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </SelectionField>
-            {activity && category && (
-  <SelectionField
-    icon="spark"
-    label="Detailed Activity"
-    color="text-violet-600 bg-violet-50"
-  >
-    <select
-      value={selectedDetailedActivity?.activity || ""}
-      onChange={(event) => {
-        const selectedActivities = getDetailedActivities(category, activity);
-        const selected = selectedActivities.find(
-          (item: any) => item.activity === event.target.value
-        );
-        onDetailedActivityChange(selected);
-      }}
-      className={selectClass}
-      required
-    >
-      <option value="">
-        Select detailed activity
-      </option>
-
-      {getDetailedActivities(category, activity).map((item: any) => (
-        <option
-          key={item.activity}
-          value={item.activity}
-        >
-          {item.activity}
-        </option>
-      ))}
-    </select>
-  </SelectionField>
-)}
           </div>
 
-          {activity && selectedDetailedActivity ? (
+          {selectedDetailedActivity ? (
             <>
               <DynamicForm
                 fields={fields}
                 values={formValues}
                 evidenceFileName={evidenceFileName}
+                scoringGuidance={
+                  pmsSectionGuidance[selectedDetailedActivity.section]
+                }
                 onChange={onFieldChange}
                 onEvidenceChange={onEvidenceChange}
               />
@@ -515,7 +499,7 @@ onDetailedActivityChange,
           ) : (
             <EmptyState
               icon="clipboard"
-              title={activity ? "Select a detailed activity" : "Select an activity type"}
+              title={category ? "Select a detailed activity" : "Select a PMS category"}
               text="The relevant form fields will appear here after selection."
             />
           )}
@@ -541,8 +525,9 @@ onDetailedActivityChange,
           <div className="space-y-1">
             <SnapshotRow icon="calendar" label="Year" value={year || "Not selected"} />
             <SnapshotRow icon="layers" label="Category" value={category || "Not selected"} />
-            <SnapshotRow icon="spark" label="Activity" value={activity || "Not selected"} />
-            <SnapshotRow icon="file" label="Fields" value={activity ? `${fields.length} fields` : "Waiting"} />
+            <SnapshotRow icon="spark" label="Section" value={selectedDetailedActivity?.section || "Not selected"} />
+            <SnapshotRow icon="file" label="Activity" value={selectedDetailedActivity?.activity || "Not selected"} />
+            <SnapshotRow icon="file" label="Fields" value={selectedDetailedActivity ? `${fields.length} fields` : "Waiting"} />
             <SnapshotRow icon="upload" label="Evidence" value={evidenceFileName || "Not attached"} />
           </div>
         </section>
@@ -892,4 +877,3 @@ function SnapshotRow({
     </div>
   );
 }
-

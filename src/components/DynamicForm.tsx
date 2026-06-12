@@ -9,6 +9,7 @@ interface DynamicFormProps {
   fields: ActivityField[];
   values: FormValues;
   evidenceFileName: string;
+  scoringGuidance?: string;
   onChange: (fieldName: string, value: string) => void;
   onEvidenceChange: (file: File | null) => void;
 }
@@ -17,6 +18,7 @@ export default function DynamicForm({
   fields,
   values,
   evidenceFileName,
+  scoringGuidance,
   onChange,
   onEvidenceChange,
 }: DynamicFormProps) {
@@ -36,6 +38,13 @@ export default function DynamicForm({
             </h3>
           </div>
         </div>
+
+        {scoringGuidance ? (
+          <div className="mb-5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-medium leading-6 text-amber-900">
+            <span className="font-black">PMS guidance: </span>
+            {scoringGuidance}
+          </div>
+        ) : null}
 
         <div className="grid gap-5 md:grid-cols-2">
           {fields.map((field) => (
@@ -87,9 +96,17 @@ export default function DynamicForm({
                   placeholder={field.placeholder ?? `Enter ${field.label}`}
                   required={field.required}
                   disabled={field.disabled}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
                   className={baseClass}
                 />
               )}
+              {field.helperText ? (
+                <p className="mt-1.5 text-xs font-medium leading-5 text-gray-500">
+                  {field.helperText}
+                </p>
+              ) : null}
             </div>
           ))}
         </div>

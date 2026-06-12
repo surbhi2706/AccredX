@@ -1,5 +1,59 @@
+export type PmsActivityDefinition = {
+  activity: string;
+  nba: string;
+  subCriterion: string;
+};
+
+export type PmsDetailedActivity = PmsActivityDefinition & {
+  section: string;
+};
+
+export const pmsCategoryMeta: Record<string, { maxMarks: number }> = {
+  "Teaching, Learning & Evaluation": { maxMarks: 150 },
+  "Research & Academic Contributions": { maxMarks: 150 },
+  "Institution Building & Professional Development": { maxMarks: 150 },
+  "Skill Enhancement & Miscellaneous": { maxMarks: 50 },
+};
+
+export const pmsSectionGuidance: Record<string, string> = {
+  "Classroom Teaching & Feedback":
+    "Teaching workload is assessed from assigned versus engaged sessions. Student feedback is evaluated on a 1-10 scale.",
+  "Teaching Innovation":
+    "New courses, course upgrades, teaching pedagogy and learning material are assessed under this section.",
+  "Exam / Evaluation Work":
+    "Marks depend on the work performed, quantity and annual limits specified in the PMS guidelines.",
+  "Journal Publications":
+    "Marks depend on indexing and author position. Enter the complete publication and authorship details.",
+  "Conference Publications & Participation":
+    "Marks depend on conference level, contribution type and author position or assigned role.",
+  "Books & Book Chapters":
+    "Publisher level, ISBN, authorship and publication details are used during assessment.",
+  "Research Grants & Sponsored Projects":
+    "Grant amount and the faculty member's role determine the applicable score.",
+  "Patents & Copyrights":
+    "Enter filing or registration status and the official application, patent or copyright number.",
+  "Faculty Development Activities Organized":
+    "Duration and role such as coordinator, co-coordinator or member determine the score.",
+  "Interaction with Outside World":
+    "Provide the external organization, role, duration and proof of the interaction.",
+  "Administrative / Committee Work":
+    "Committee level and role determine the applicable marks.",
+  "Contribution to Society":
+    "The PMS guideline permits 5 marks per activity, subject to a maximum of 10.",
+  "FDP / Training Programs Attended":
+    "Duration and successful completion determine the applicable marks.",
+  "MOOCs / Online Certifications":
+    "Credits, course duration and successful completion determine the applicable marks.",
+  "Consultancy Projects":
+    "The guideline awards marks based on whether the consultancy is in progress or completed.",
+};
+
 export const pmsMapping = {
   "Teaching, Learning & Evaluation": {
+    "Classroom Teaching & Feedback": [
+      { activity: "Classroom Teaching Workload", nba: "Criterion 2", subCriterion: "2.3 Teaching Learning Process" },
+      { activity: "Student Feedback", nba: "Criterion 2", subCriterion: "2.3 Teaching Learning Process" },
+    ],
     "Teaching Innovation": [
       { activity: "Innovative Teaching Pedagogy", nba: "Criterion 2", subCriterion: "2.3 Teaching Learning Process" },
       { activity: "Guest Lecture Organized", nba: "Criterion 2", subCriterion: "2.3 Teaching Learning Process" },
@@ -227,7 +281,7 @@ export const pmsMapping = {
       { activity: "Problem Solving Consultancy", nba: "Criterion 5", subCriterion: "5.1 Industry Interaction & Research" },
     ]
   }
-};
+} satisfies Record<string, Record<string, PmsActivityDefinition[]>>;
 
 export function getFallbackCriterion(category: string): string {
   switch (category) {
@@ -259,21 +313,46 @@ export function getFallbackSubcriterion(category: string): string {
   }
 }
 
-export function getDetailedActivities(category: string, activity: string): Array<{
-  activity: string;
-  nba: string;
-  subCriterion: string;
+export function getPmsCategories(): string[] {
+  return Object.keys(pmsMapping);
+}
+
+export function getActivityGroups(category: string): Array<{
+  section: string;
+  activities: PmsDetailedActivity[];
 }> {
-  const categoryData = (pmsMapping as any)[category];
-  const list = categoryData ? categoryData[activity] : undefined;
-  if (list && list.length > 0) {
-    return list;
+  const categoryData = pmsMapping[category as keyof typeof pmsMapping];
+
+  if (!categoryData) {
+    return [];
   }
-  return [
-    {
-      activity: activity,
-      nba: getFallbackCriterion(category),
-      subCriterion: getFallbackSubcriterion(category),
-    }
-  ];
+
+  return Object.entries(categoryData).map(([section, activities]) => ({
+    section,
+    activities: activities.map((item) => ({ ...item, section })),
+  }));
+}
+
+export function getDetailedActivities(
+  category: string,
+  section?: string
+): PmsDetailedActivity[] {
+  const groups = getActivityGroups(category);
+
+  if (section) {
+    return groups.find((group) => group.section === section)?.activities ?? [];
+  }
+
+  return groups.flatMap((group) => group.activities);
+}
+
+export function findDetailedActivity(
+  category: string,
+  activityName: string
+): PmsDetailedActivity | null {
+  return (
+    getDetailedActivities(category).find(
+      (item) => item.activity === activityName
+    ) ?? null
+  );
 }

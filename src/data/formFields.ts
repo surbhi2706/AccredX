@@ -15,10 +15,49 @@ export type ActivityField = {
   options?: string[];
   fullWidth?: boolean;
   disabled?: boolean;
+  helperText?: string;
+  min?: number;
+  max?: number;
+  step?: number;
 };
 
 // Complete field definitions for ALL detailed activities in PMS system
 export const activityFields: Record<string, ActivityField[]> = {
+  "Classroom Teaching Workload": [
+    { name: "courseName", label: "Name of Course", type: "text", required: true },
+    {
+      name: "courseDeliveryType",
+      label: "Course Delivery Type",
+      type: "select",
+      options: ["Lecture", "Practical", "Tutorial", "Seminar"],
+      required: true,
+    },
+    { name: "sessionsAssigned", label: "Hours/Sessions Assigned", type: "number", min: 0, required: true },
+    { name: "sessionsEngaged", label: "Hours/Sessions Engaged", type: "number", min: 0, required: true },
+    {
+      name: "engagementPercentage",
+      label: "Engaged Hours/Sessions (%)",
+      type: "number",
+      min: 0,
+      max: 100,
+      helperText: "Calculate from official timetable and attendance records.",
+      required: true,
+    },
+  ],
+  "Student Feedback": [
+    { name: "courseName", label: "Name of Course", type: "text", required: true },
+    {
+      name: "averageFeedback",
+      label: "Average Student Feedback",
+      type: "number",
+      min: 0,
+      max: 10,
+      step: 0.1,
+      helperText: "Enter the anonymous student feedback average on a 1-10 scale.",
+      required: true,
+    },
+    { name: "studentCount", label: "Number of Responses", type: "number", min: 0 },
+  ],
   // TEACHING, LEARNING & EVALUATION - Teaching Innovation
   "Innovative Teaching Pedagogy": [
     { name: "courseName", label: "Course Name", type: "text", required: true },
@@ -467,6 +506,18 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "indexing", label: "Indexing", type: "select", options: ["Scopus", "Web of Science", "Both"] },
     { name: "papersReviewed", label: "Number of Papers Reviewed", type: "number" },
     { name: "year", label: "Year", type: "text" },
+  ],
+  "Journal Reviewer": [
+    { name: "journalName", label: "Journal Name", type: "text", required: true },
+    {
+      name: "journalType",
+      label: "Journal Type",
+      type: "select",
+      options: ["Scopus/WOS/SCI/ESCI/UGC CARE", "Other Journal"],
+      required: true,
+    },
+    { name: "articleTitle", label: "Reviewed Article Title", type: "text" },
+    { name: "reviewDate", label: "Review Date", type: "date" },
   ],
   "Reviewer for Other Journals": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },

@@ -1,12 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 
-console.log("CLIENT ID:", process.env.GOOGLE_CLIENT_ID);
-console.log(
-  "CLIENT SECRET PREFIX:",
-  process.env.GOOGLE_CLIENT_SECRET?.substring(0, 8)
-);
-
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
