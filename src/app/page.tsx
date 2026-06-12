@@ -22,6 +22,7 @@ import type { UserProfile } from "@/components/LoginScreen";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import CvPreviewModal from "@/components/CvPreviewModal";
 import ProfileForm from "@/components/ProfileForm";
+import TimelineView from "@/components/TimelineView";
 import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
 
@@ -47,6 +48,10 @@ const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
   profile: {
     title: "Profile",
     subtitle: "Faculty details and contribution summary.",
+  },
+  timeline: {
+    title: "Document Timeline",
+    subtitle: "Track and manage your uploaded evidence documents by academic year.",
   },
 };
 
@@ -315,6 +320,10 @@ export default function Home() {
 
           {activeView === "profile" ? (
             <ProfileForm user={currentUser} />
+          ) : null}
+
+          {activeView === "timeline" ? (
+            <TimelineView activities={savedActivities} />
           ) : null}
         </main>
       </div>
@@ -758,6 +767,7 @@ function MobileNav({
     { id: "my-activities", label: "Activities" },
     { id: "reports", label: "Reports" },
     { id: "profile", label: "Profile" },
+    { id: "timeline", label: "Timeline" },
   ];
 
   return (
