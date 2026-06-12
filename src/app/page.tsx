@@ -179,6 +179,9 @@ export default function Home() {
       setSavedMessage("Uploading evidence...");
       const formData = new FormData();
       formData.append("file", evidenceFile);
+      formData.append("academicYear", year);
+      formData.append("pmsCategory", category);
+      formData.append("activityType", selectedDetailedActivity?.activity || activity);
 
       try {
         const res = await fetch("/api/upload", {

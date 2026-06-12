@@ -6,11 +6,41 @@ import os from "os";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+async function getOrCreateFolder(drive: any, folderName: string, parentFolderId: string): Promise<string> {
+    if (!folderName) return parentFolderId;
+
+    const escapedFolderName = folderName.trim().replace(/'/g, "\\'");
+    const query = `mimeType='application/vnd.google-apps.folder' and name='${escapedFolderName}' and '${parentFolderId}' in parents and trashed=false`;
+
+    const folderSearch = await drive.files.list({
+        q: query,
+        fields: "files(id, name)",
+        spaces: "drive",
+    });
+
+    if (folderSearch.data.files && folderSearch.data.files.length > 0) {
+        return folderSearch.data.files[0].id as string;
+    } else {
+        const folderCreate = await drive.files.create({
+            requestBody: {
+                name: folderName.trim(),
+                mimeType: "application/vnd.google-apps.folder",
+                parents: [parentFolderId],
+            },
+            fields: "id",
+        });
+        return folderCreate.data.id as string;
+    }
+}
+
 export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
 
         const file = formData.get("file") as File;
+        const academicYear = (formData.get("academicYear") as string)?.trim() || "";
+        const pmsCategory = (formData.get("pmsCategory") as string)?.trim() || "";
+        const activityType = (formData.get("activityType") as string)?.trim() || "";
 
         if (!file) {
             return NextResponse.json(
@@ -50,34 +80,22 @@ export async function POST(req: NextRequest) {
 
         fs.writeFileSync(tempPath, buffer);
 
-        const folderName = "AccredX Repository";
-        let folderId = null;
+        let finalFolderId = null;
 
-        const folderSearch = await drive.files.list({
-            q: `mimeType='application/vnd.google-apps.folder' and name='${folderName}' and trashed=false`,
-            fields: "files(id, name)",
-            spaces: "drive",
-        });
-
-        if (folderSearch.data.files && folderSearch.data.files.length > 0) {
-            folderId = folderSearch.data.files[0].id;
-            console.log("Folder found");
-        } else {
-            const folderCreate = await drive.files.create({
-                requestBody: {
-                    name: folderName,
-                    mimeType: "application/vnd.google-apps.folder",
-                },
-                fields: "id",
-            });
-            folderId = folderCreate.data.id;
-            console.log("Folder created");
+        try {
+            const rootFolderId = await getOrCreateFolder(drive, "AccredX", "root");
+            const yearFolderId = academicYear ? await getOrCreateFolder(drive, academicYear, rootFolderId) : rootFolderId;
+            const categoryFolderId = pmsCategory ? await getOrCreateFolder(drive, pmsCategory, yearFolderId) : yearFolderId;
+            finalFolderId = activityType ? await getOrCreateFolder(drive, activityType, categoryFolderId) : categoryFolderId;
+        } catch (folderError) {
+            console.error("Error creating folder structure:", folderError);
+            throw new Error("Failed to create folder structure in Google Drive.");
         }
 
         const response = await drive.files.create({
             requestBody: {
                 name: file.name,
-                parents: folderId ? [folderId] : undefined,
+                parents: finalFolderId ? [finalFolderId] : undefined,
             },
             media: {
                 mimeType: file.type,
@@ -92,7 +110,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             fileId: response.data.id,
-            folderId: folderId,
+            folderId: finalFolderId,
         });
     } catch (error: any) {
         console.error("Error during file upload:", error);
