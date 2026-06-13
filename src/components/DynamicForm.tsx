@@ -99,6 +99,8 @@ export default function DynamicForm({
                   min={field.min}
                   max={field.max}
                   step={field.step}
+                  pattern={field.pattern}
+                  title={field.pattern ? field.helperText || "Invalid format" : undefined}
                   className={baseClass}
                 />
               )}

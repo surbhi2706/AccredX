@@ -19,6 +19,7 @@ export type ActivityField = {
   min?: number;
   max?: number;
   step?: number;
+  pattern?: string;
 };
 
 // Complete field definitions for ALL detailed activities in PMS system
@@ -62,7 +63,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Innovative Teaching Pedagogy": [
     { name: "courseName", label: "Course Name", type: "text", required: true },
     { name: "pedagogyType", label: "Pedagogy Type", type: "text", required: true },
-    { name: "implementationYear", label: "Implementation Year", type: "text" },
+    { name: "implementationYear", label: "Implementation Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "description", label: "Description", type: "textarea", required: true, fullWidth: true },
   ],
   "Guest Lecture Organized": [
@@ -125,13 +126,13 @@ export const activityFields: Record<string, ActivityField[]> = {
   "BOS Participation": [
     { name: "bosTitle", label: "Board of Studies", type: "text", required: true },
     { name: "role", label: "Role", type: "select", options: ["Member", "Chairperson", "Convener"] },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "contribution", label: "Key Contributions", type: "textarea", fullWidth: true },
   ],
   "Course Revision / Upgradation": [
     { name: "courseName", label: "Course Name", type: "text", required: true },
     { name: "previousVersion", label: "Previous Version", type: "text" },
-    { name: "academicYear", label: "Academic Year", type: "text" },
+    { name: "academicYear", label: "Academic Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "revisionsApplied", label: "Revisions Applied", type: "textarea", fullWidth: true },
   ],
   "New Course Design": [
@@ -167,7 +168,7 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "subjectName", label: "Subject Name", type: "text", required: true },
     { name: "examType", label: "Exam Type", type: "select", options: ["Midterm", "Final", "Practical", "Internal Assessment"] },
     { name: "semester", label: "Semester", type: "text" },
-    { name: "academicYear", label: "Academic Year", type: "text" },
+    { name: "academicYear", label: "Academic Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Question Paper Moderation": [
     { name: "subjectName", label: "Subject Name", type: "text", required: true },
@@ -262,7 +263,7 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "scholarName", label: "PhD Scholar Name", type: "text", required: true },
     { name: "thesisTitle", label: "Thesis Title", type: "text", required: true },
     { name: "researchArea", label: "Research Area", type: "text", required: true },
-    { name: "registrationYear", label: "Year of Registration", type: "text" },
+    { name: "registrationYear", label: "Year of Registration", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Student Innovation Project": [
     { name: "projectTitle", label: "Innovation Project Title", type: "text", required: true },
@@ -283,7 +284,7 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "doi", label: "DOI", type: "text" },
     { name: "issn", label: "ISSN", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "quartile", label: "Quartile", type: "select", options: ["Q1", "Q2", "Q3", "Q4"] },
   ],
   "SCI / SCIE / ESCI Publication": [
@@ -291,42 +292,42 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "doi", label: "DOI", type: "text" },
     { name: "indexingType", label: "Indexing Type", type: "select", options: ["SCI", "SCIE", "ESCI"], required: true },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Web of Science Publication": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "doi", label: "DOI", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "UGC CARE Journal Paper": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "journalList", label: "UGC CARE List", type: "select", options: ["List 1", "List 2", "List 3", "List 4"] },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Peer Reviewed Journal Paper": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "doi", label: "DOI / URL", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "First Author Research Publication": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "authors", label: "All Authors", type: "textarea" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Co-author Research Publication": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "correspondingAuthor", label: "Corresponding Author", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Book Review in Journal": [
     { name: "bookTitle", label: "Book Title Reviewed", type: "text", required: true },
     { name: "journalName", label: "Journal Name", type: "text", required: true },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // RESEARCH & ACADEMIC CONTRIBUTIONS - Conference Publications
@@ -334,46 +335,46 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "conferenceLocation", label: "Location", type: "text" },
-    { name: "publicationYear", label: "Year", type: "text" },
+    { name: "publicationYear", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "doi", label: "DOI / URL", type: "text" },
   ],
   "National Conference Full Paper": [
     { name: "paperTitle", label: "Paper Title", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "location", label: "Location", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Conference Abstract Publication": [
     { name: "abstractTitle", label: "Abstract Title", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Poster Presentation": [
     { name: "posterTitle", label: "Poster Title", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "location", label: "Location", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Conference Participation": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "location", label: "Location", type: "text" },
-    { name: "dates", label: "Dates", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Track Chair Role": [
     { name: "trackName", label: "Track Name", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Technical Program Committee (TPC) Member": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "role", label: "Committee Role", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Session Chair": [
     { name: "sessionTitle", label: "Session Title", type: "text", required: true },
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // RESEARCH & ACADEMIC CONTRIBUTIONS - Books & Book Chapters
@@ -381,35 +382,35 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "bookTitle", label: "Textbook Title", type: "text", required: true },
     { name: "publisher", label: "Publisher", type: "text", required: true },
     { name: "isbn", label: "ISBN", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Reference Book Publication": [
     { name: "bookTitle", label: "Book Title", type: "text", required: true },
     { name: "publisher", label: "Publisher", type: "text", required: true },
     { name: "isbn", label: "ISBN", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "International Publisher Book": [
     { name: "bookTitle", label: "Book Title", type: "text", required: true },
     { name: "publisher", label: "International Publisher", type: "text", required: true },
     { name: "country", label: "Country of Publisher", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "National Publisher Book": [
     { name: "bookTitle", label: "Book Title", type: "text", required: true },
     { name: "publisher", label: "Publisher", type: "text", required: true },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "International Book Chapter": [
     { name: "chapterTitle", label: "Chapter Title", type: "text", required: true },
     { name: "bookTitle", label: "Book Title", type: "text", required: true },
     { name: "publisher", label: "Publisher", type: "text" },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "National Book Chapter": [
     { name: "chapterTitle", label: "Chapter Title", type: "text", required: true },
     { name: "bookTitle", label: "Book Title", type: "text", required: true },
-    { name: "publicationYear", label: "Publication Year", type: "text" },
+    { name: "publicationYear", label: "Publication Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Edited Book Contribution": [
     { name: "contributionTitle", label: "Contribution Title", type: "text", required: true },
@@ -505,7 +506,7 @@ export const activityFields: Record<string, ActivityField[]> = {
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "indexing", label: "Indexing", type: "select", options: ["Scopus", "Web of Science", "Both"] },
     { name: "papersReviewed", label: "Number of Papers Reviewed", type: "number" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Journal Reviewer": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },
@@ -522,42 +523,42 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Reviewer for Other Journals": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "papersReviewed", label: "Number of Papers Reviewed", type: "number" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Conference Paper Reviewer": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "papersReviewed", label: "Number of Papers Reviewed", type: "number" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "PhD Thesis Reviewer": [
     { name: "thesesReviewed", label: "Number of Theses Reviewed", type: "number" },
     { name: "university", label: "University/Institute", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Editor-in-Chief": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "duration", label: "Duration", type: "text" },
-    { name: "startYear", label: "Start Year", type: "text" },
+    { name: "startYear", label: "Start Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Associate Editor": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },
     { name: "duration", label: "Duration", type: "text" },
-    { name: "startYear", label: "Start Year", type: "text" },
+    { name: "startYear", label: "Start Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Editorial Board Member": [
     { name: "journalName", label: "Journal Name", type: "text", required: true },
-    { name: "joinYear", label: "Year Joined", type: "text" },
+    { name: "joinYear", label: "Year Joined", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Conference Compendium Reviewer": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // RESEARCH & ACADEMIC CONTRIBUTIONS - Research Supervision
   "PhD Scholar Guidance": [
     { name: "scholarName", label: "Scholar Name", type: "text", required: true },
     { name: "thesisTitle", label: "Thesis Title", type: "text" },
-    { name: "registrationYear", label: "Year of Registration", type: "text" },
+    { name: "registrationYear", label: "Year of Registration", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "PhD Thesis Submitted": [
     { name: "scholarName", label: "Scholar Name", type: "text", required: true },
@@ -588,7 +589,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Workshop for Students": [
     { name: "workshopTitle", label: "Workshop Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "skillsDeveloped", label: "Skills Developed", type: "textarea" },
   ],
@@ -616,7 +617,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Hackathon Organized": [
     { name: "hackathonName", label: "Hackathon Name", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "prizes", label: "Prizes/Awards", type: "textarea" },
   ],
@@ -649,19 +650,19 @@ export const activityFields: Record<string, ActivityField[]> = {
   // INSTITUTION BUILDING & PROFESSIONAL DEVELOPMENT - Faculty Development Activities
   "Conference Organized": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "role", label: "Role", type: "select", options: ["Convener", "Coordinator", "Co-Coordinator", "Team Member"] },
   ],
   "FDP Organized": [
     { name: "fdpTitle", label: "FDP Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "role", label: "Role", type: "select", options: ["Convener", "Coordinator", "Co-Coordinator"] },
   ],
   "STTP Organized": [
     { name: "sttpTitle", label: "STTP Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "participants", label: "Number of Participants", type: "number" },
   ],
   "Faculty Workshop Organized": [
@@ -724,22 +725,22 @@ export const activityFields: Record<string, ActivityField[]> = {
   "External Examiner": [
     { name: "universityOrInstitute", label: "University/Institute", type: "text", required: true },
     { name: "program", label: "Program", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "BOS Member": [
     { name: "bosMembership", label: "Board of Studies", type: "text", required: true },
     { name: "institution", label: "Institution", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "FOET / AAB / AC Member": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
     { name: "institution", label: "Institution", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Auditor / Expert Committee Member": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
     { name: "institution", label: "Institution", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "International Teaching Interaction": [
     { name: "interactionTitle", label: "Interaction Title", type: "text", required: true },
@@ -762,61 +763,61 @@ export const activityFields: Record<string, ActivityField[]> = {
   "HOD Role": [
     { name: "departmentName", label: "Department Name", type: "text", required: true },
     { name: "duration", label: "Duration", type: "text" },
-    { name: "startYear", label: "Start Year", type: "text" },
+    { name: "startYear", label: "Start Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "achievements", label: "Key Achievements", type: "textarea", fullWidth: true },
   ],
   "Associate Dean / Dean": [
     { name: "roleName", label: "Role (Associate Dean/Dean)", type: "select", options: ["Associate Dean", "Dean"], required: true },
     { name: "duration", label: "Duration", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "IQAC Coordinator": [
     { name: "iqacRole", label: "IQAC Role", type: "text" },
     { name: "duration", label: "Duration", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "BOS Chairperson": [
     { name: "bosMembership", label: "Board of Studies", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Exam Committee Coordinator": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Timetable Committee": [
     { name: "role", label: "Role in Committee", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "PG Coordinator": [
     { name: "pgProgram", label: "PG Program", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Placement Coordinator": [
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "placementDetails", label: "Details", type: "textarea" },
   ],
   "Open Elective Coordinator": [
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "electives", label: "Electives Coordinated", type: "textarea" },
   ],
   "Minor/Honours Coordinator": [
     { name: "program", label: "Program", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Department Committee Convener": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
     { name: "responsibilities", label: "Key Responsibilities", type: "textarea" },
   ],
   "University Committee Member": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
     { name: "university", label: "University", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Statutory Committee Work": [
     { name: "committeeName", label: "Committee Name", type: "text", required: true },
     { name: "role", label: "Role", type: "text" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // INSTITUTION BUILDING & PROFESSIONAL DEVELOPMENT - Contribution to Society
@@ -842,7 +843,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Literacy Camp": [
     { name: "campTitle", label: "Camp Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "beneficiaries", label: "Number of Beneficiaries", type: "number" },
   ],
   "Tree Plantation": [
@@ -870,38 +871,38 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Unnat Bharat Abhiyan": [
     { name: "villageOrArea", label: "Village/Area Name", type: "text", required: true },
     { name: "initiative", label: "Initiative/Activity", type: "textarea" },
-    { name: "year", label: "Year", type: "text" },
+    { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // SKILL ENHANCEMENT & MISCELLANEOUS - FDP / Training Programs Attended
   "Faculty Development Program (FDP) Attended": [
     { name: "fdpTitle", label: "FDP Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
     { name: "certificateReceived", label: "Certificate Received", type: "select", options: ["Yes", "No"] },
   ],
   "STTP Attended": [
     { name: "sttpTitle", label: "STTP Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "Refresher Course": [
     { name: "courseTitle", label: "Course Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "Orientation Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "HRDC Program": [
     { name: "programTitle", label: "HRDC Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "Workshop Attended": [
     { name: "workshopTitle", label: "Workshop Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "Seminar Attended": [
     { name: "seminarTitle", label: "Seminar Title", type: "text", required: true },
@@ -909,12 +910,12 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "National Training Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
   "International Training Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
     { name: "country", label: "Country", type: "text" },
-    { name: "dates", label: "Dates", type: "text" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
   ],
 
   // SKILL ENHANCEMENT & MISCELLANEOUS - MOOCs / Online Certifications
@@ -987,38 +988,38 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Best Faculty Award": [
     { name: "awardName", label: "Award Name", type: "text", required: true },
     { name: "awardingOrganization", label: "Awarding Organization", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Teaching Excellence Award": [
     { name: "awardName", label: "Award Name", type: "text", required: true },
     { name: "awardingOrganization", label: "Awarding Organization", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Research Excellence Award": [
     { name: "awardName", label: "Award Name", type: "text", required: true },
     { name: "awardingOrganization", label: "Awarding Organization", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Innovation Award": [
     { name: "awardName", label: "Award Name", type: "text", required: true },
     { name: "innovationDescription", label: "Innovation Description", type: "textarea" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Industry Recognition": [
     { name: "recognitionTitle", label: "Recognition Title", type: "text", required: true },
     { name: "company", label: "Recognizing Company/Industry", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "National Academic Award": [
     { name: "awardName", label: "Award Name", type: "text", required: true },
     { name: "awardingBody", label: "Awarding Body", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "International Recognition": [
     { name: "recognitionTitle", label: "Recognition Title", type: "text", required: true },
     { name: "awardingBody", label: "Awarding Body", type: "text" },
     { name: "country", label: "Country", type: "text" },
-    { name: "year", label: "Year Received", type: "text" },
+    { name: "year", label: "Year Received", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
 
   // SKILL ENHANCEMENT & MISCELLANEOUS - Consultancy Projects
