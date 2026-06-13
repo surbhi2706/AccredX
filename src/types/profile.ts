@@ -1,7 +1,7 @@
 export type EducationEntry = {
-  id: string;
+  examination: "Ph.D" | "PG" | "UG" | "Diploma" | "NET/SET/Other";
   degree: string;
-  specialization: string;
+  university: string;
   institute: string;
   yearOfPassing: string;
   cgpaOrPercentage: string;
@@ -18,5 +18,10 @@ export type FacultyProfile = {
   phoneNumber: string;
   officeAddress: string;
   dateOfJoining: string;
+  careerExperience?: string;
+  industryExperience?: string;
+  teachingExperience?: string;
+  administrativeDesignation?: string;
   education: EducationEntry[];
 };
+

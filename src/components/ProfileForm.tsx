@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import type { FacultyProfile } from "@/types/profile";
+import type { FacultyProfile, EducationEntry } from "@/types/profile";
 import type { UserProfile } from "@/components/LoginScreen";
 import EducationSection from "./EducationSection";
 import Icon from "./Icon";
@@ -19,8 +19,63 @@ const defaultProfile: FacultyProfile = {
   phoneNumber: "",
   officeAddress: "",
   dateOfJoining: "",
-  education: [],
+  careerExperience: "",
+  industryExperience: "",
+  teachingExperience: "",
+  administrativeDesignation: "",
+  education: [
+    { examination: "Ph.D", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+    { examination: "PG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+    { examination: "UG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+    { examination: "Diploma", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+    { examination: "NET/SET/Other", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+  ],
 };
+
+const examinationsList: Array<"Ph.D" | "PG" | "UG" | "Diploma" | "NET/SET/Other"> = [
+  "Ph.D", "PG", "UG", "Diploma", "NET/SET/Other"
+];
+
+function migrateEducation(savedEdu: any[]): EducationEntry[] {
+  if (!Array.isArray(savedEdu)) return defaultProfile.education;
+  
+  const list = examinationsList.map((exam) => {
+    const match = savedEdu.find((e: any) => {
+      if (!e) return false;
+      if (e.examination === exam) return true;
+      const examLower = exam.toLowerCase();
+      const degLower = (e.degree || "").toLowerCase();
+      
+      if (examLower === "ph.d" && (degLower.includes("phd") || degLower.includes("ph.d"))) return true;
+      if (examLower === "pg" && (degLower.includes("m.tech") || degLower.includes("mtech") || degLower.includes("master") || degLower.includes("pg") || degLower.includes("mba") || degLower.includes("m.e") || degLower.includes("me"))) return true;
+      if (examLower === "ug" && (degLower.includes("b.tech") || degLower.includes("btech") || degLower.includes("bachelor") || degLower.includes("ug") || degLower.includes("b.e") || degLower.includes("be") || degLower.includes("b.sc") || degLower.includes("bsc"))) return true;
+      if (examLower === "diploma" && degLower.includes("diploma")) return true;
+      return false;
+    });
+
+    if (match) {
+      return {
+        examination: exam,
+        degree: match.degree || "",
+        university: match.university || match.institute || "",
+        institute: match.institute || "",
+        yearOfPassing: match.yearOfPassing || "",
+        cgpaOrPercentage: match.cgpaOrPercentage || "",
+      };
+    }
+
+    return {
+      examination: exam,
+      degree: "",
+      university: "",
+      institute: "",
+      yearOfPassing: "",
+      cgpaOrPercentage: "",
+    };
+  });
+
+  return list;
+}
 
 const STORAGE_KEY = "accredx_faculty_profile";
 
@@ -74,7 +129,16 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     const savedData = localStorage.getItem(STORAGE_KEY);
     if (savedData) {
       try {
-        setProfile(JSON.parse(savedData));
+        const parsed = JSON.parse(savedData);
+        if (parsed.education) {
+          parsed.education = migrateEducation(parsed.education);
+        } else {
+          parsed.education = defaultProfile.education;
+        }
+        setProfile({
+          ...defaultProfile,
+          ...parsed,
+        });
       } catch (e) {
         console.error("Failed to parse profile data", e);
       }
@@ -179,9 +243,16 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                 onChange={handleChange}
               />
               <Field
-                label="Designation"
+                label="Designation (Academic)"
                 name="designation"
                 value={profile.designation}
+                isEditing={isEditingProfile}
+                onChange={handleChange}
+              />
+              <Field
+                label="Present Administrative Designation"
+                name="administrativeDesignation"
+                value={profile.administrativeDesignation || ""}
                 isEditing={isEditingProfile}
                 onChange={handleChange}
               />
@@ -193,7 +264,7 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                 onChange={handleChange}
               />
               <Field
-                label="School / Institute"
+                label="School / Institute (College)"
                 name="schoolInstitute"
                 value={profile.schoolInstitute}
                 isEditing={isEditingProfile}
@@ -207,6 +278,32 @@ export default function ProfileForm({ user }: ProfileFormProps) {
                 isEditing={isEditingProfile}
                 onChange={handleChange}
               />
+              <div className="flex flex-col gap-1 md:col-span-1">
+                <label className="text-sm font-bold text-gray-700">Experience Details (Yrs)</label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Field
+                    label="Career"
+                    name="careerExperience"
+                    value={profile.careerExperience || ""}
+                    isEditing={isEditingProfile}
+                    onChange={handleChange}
+                  />
+                  <Field
+                    label="Industry"
+                    name="industryExperience"
+                    value={profile.industryExperience || ""}
+                    isEditing={isEditingProfile}
+                    onChange={handleChange}
+                  />
+                  <Field
+                    label="Teaching"
+                    name="teachingExperience"
+                    value={profile.teachingExperience || ""}
+                    isEditing={isEditingProfile}
+                    onChange={handleChange}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
