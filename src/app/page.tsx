@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FormEvent, ReactNode } from "react";
 
 import { useSession, signOut } from "next-auth/react";
@@ -91,15 +91,27 @@ export default function Home() {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
+  const [savedProfile, setSavedProfile] = useState<any>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("accredx_faculty_profile");
+    if (saved) {
+      try {
+        setSavedProfile(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved profile", e);
+      }
+    }
+  }, []);
 
   const { data: session, status } = useSession();
   const currentUser: UserProfile | null = session?.user
     ? {
-        name: session.user.name || "Faculty Member",
+        name: savedProfile?.fullName || session.user.name || "Faculty Member",
         email: session.user.email || "",
-        employeeId: "FAC-0000",
-        designation: "Faculty",
-        department: "Department",
+        employeeId: savedProfile?.employeeId || "FAC-0000",
+        designation: savedProfile?.designation || "Faculty",
+        department: savedProfile?.department || "",
         academicYear: "2025-26",
       }
     : null;
@@ -338,7 +350,7 @@ export default function Home() {
           ) : null}
 
           {activeView === "profile" ? (
-            <ProfileForm user={currentUser} />
+            <ProfileForm user={currentUser} onSave={(p) => setSavedProfile(p)} />
           ) : null}
 
           {activeView === "timeline" ? (

@@ -358,7 +358,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Conference Participation": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
     { name: "location", label: "Location", type: "text" },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "year", label: "Year", type: "number", min: 1950, max: 2100, placeholder: "YYYY" },
   ],
   "Track Chair Role": [
@@ -589,7 +589,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Workshop for Students": [
     { name: "workshopTitle", label: "Workshop Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "skillsDeveloped", label: "Skills Developed", type: "textarea" },
   ],
@@ -617,7 +617,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Hackathon Organized": [
     { name: "hackathonName", label: "Hackathon Name", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "prizes", label: "Prizes/Awards", type: "textarea" },
   ],
@@ -650,19 +650,19 @@ export const activityFields: Record<string, ActivityField[]> = {
   // INSTITUTION BUILDING & PROFESSIONAL DEVELOPMENT - Faculty Development Activities
   "Conference Organized": [
     { name: "conferenceName", label: "Conference Name", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "role", label: "Role", type: "select", options: ["Convener", "Coordinator", "Co-Coordinator", "Team Member"] },
   ],
   "FDP Organized": [
     { name: "fdpTitle", label: "FDP Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "participants", label: "Number of Participants", type: "number" },
     { name: "role", label: "Role", type: "select", options: ["Convener", "Coordinator", "Co-Coordinator"] },
   ],
   "STTP Organized": [
     { name: "sttpTitle", label: "STTP Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "participants", label: "Number of Participants", type: "number" },
   ],
   "Faculty Workshop Organized": [
@@ -843,7 +843,7 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "Literacy Camp": [
     { name: "campTitle", label: "Camp Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "beneficiaries", label: "Number of Beneficiaries", type: "number" },
   ],
   "Tree Plantation": [
@@ -878,31 +878,31 @@ export const activityFields: Record<string, ActivityField[]> = {
   "Faculty Development Program (FDP) Attended": [
     { name: "fdpTitle", label: "FDP Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
     { name: "certificateReceived", label: "Certificate Received", type: "select", options: ["Yes", "No"] },
   ],
   "STTP Attended": [
     { name: "sttpTitle", label: "STTP Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "Refresher Course": [
     { name: "courseTitle", label: "Course Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "Orientation Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "HRDC Program": [
     { name: "programTitle", label: "HRDC Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "Workshop Attended": [
     { name: "workshopTitle", label: "Workshop Title", type: "text", required: true },
     { name: "organizer", label: "Organizer", type: "text" },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "Seminar Attended": [
     { name: "seminarTitle", label: "Seminar Title", type: "text", required: true },
@@ -910,12 +910,12 @@ export const activityFields: Record<string, ActivityField[]> = {
   ],
   "National Training Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
   "International Training Program": [
     { name: "programTitle", label: "Program Title", type: "text", required: true },
     { name: "country", label: "Country", type: "text" },
-    { name: "dates", label: "Dates", type: "text", placeholder: "YYYY-MM-DD to YYYY-MM-DD", pattern: "^\\d{4}-\\d{2}-\\d{2} to \\d{4}-\\d{2}-\\d{2}$", helperText: "Format: YYYY-MM-DD to YYYY-MM-DD" },
+    { name: "dates", label: "Dates", type: "text", placeholder: "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY", pattern: "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$", helperText: "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)" },
   ],
 
   // SKILL ENHANCEMENT & MISCELLANEOUS - MOOCs / Online Certifications

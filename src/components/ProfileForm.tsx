@@ -6,6 +6,7 @@ import Icon from "./Icon";
 
 type ProfileFormProps = {
   user: UserProfile;
+  onSave?: (profile: FacultyProfile) => void;
 };
 
 const defaultProfile: FacultyProfile = {
@@ -118,7 +119,7 @@ function Field({
   );
 }
 
-export default function ProfileForm({ user }: ProfileFormProps) {
+export default function ProfileForm({ user, onSave }: ProfileFormProps) {
   const [profile, setProfile] = useState<FacultyProfile>(defaultProfile);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -166,6 +167,9 @@ export default function ProfileForm({ user }: ProfileFormProps) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
     setIsSaved(true);
     setIsEditingProfile(false);
+    if (onSave) {
+      onSave(profile);
+    }
     setTimeout(() => setIsSaved(false), 3000);
   };
 

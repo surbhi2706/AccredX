@@ -47,11 +47,26 @@ export default function DynamicForm({
         ) : null}
 
         <div className="grid gap-5 md:grid-cols-2">
-          {fields.map((field) => (
-            <div
-              key={field.name}
-              className={field.fullWidth ? "md:col-span-2" : ""}
-            >
+          {fields.map((originalField) => {
+            const field = { ...originalField };
+            
+            // Override date configurations dynamically to enforce DD-MM-YYYY format
+            if (field.type === "date") {
+              field.type = "text";
+              field.placeholder = "DD-MM-YYYY";
+              field.pattern = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}$";
+              field.helperText = "Format: DD-MM-YYYY (e.g. 15-06-2026)";
+            } else if (field.name === "dates" || field.placeholder?.includes("to YYYY-MM-DD") || field.placeholder?.includes("to DD-MM-YYYY")) {
+              field.placeholder = "DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY";
+              field.pattern = "^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4}( to (0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-[0-9]{4})?$";
+              field.helperText = "Format: DD-MM-YYYY or DD-MM-YYYY to DD-MM-YYYY (e.g. 16-04-2025 or 16-04-2025 to 20-04-2025)";
+            }
+
+            return (
+              <div
+                key={field.name}
+                className={field.fullWidth ? "md:col-span-2" : ""}
+              >
               <label
                 htmlFor={field.name}
                 className="mb-2 block text-sm font-bold text-gray-700"
@@ -110,7 +125,7 @@ export default function DynamicForm({
                 </p>
               ) : null}
             </div>
-          ))}
+          )})}
         </div>
       </section>
 

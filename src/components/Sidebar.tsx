@@ -96,8 +96,8 @@ export default function Sidebar({ activeView, onNavigate, user, onLogout }: Side
             <p className="text-sm font-black tracking-tight text-gray-900 truncate">
               {user.name}
             </p>
-            <p className="text-xs font-semibold text-gray-500 truncate">
-              {user.department}
+            <p className="text-xs font-semibold text-gray-505 truncate">
+              Department - {user.department || "—"}
             </p>
           </div>
         </div>
