@@ -174,6 +174,7 @@ export default function Home() {
     event.preventDefault();
 
     let evidenceFileId = "";
+    let sheetsWarning = "";
 
     if (evidenceFile) {
       setSavedMessage("Uploading evidence...");
@@ -182,6 +183,7 @@ export default function Home() {
       formData.append("academicYear", year);
       formData.append("pmsCategory", category);
       formData.append("activityType", selectedDetailedActivity?.activity || activity);
+      formData.append("metadata", JSON.stringify(formValues));
 
       try {
         const res = await fetch("/api/upload", {
@@ -196,6 +198,9 @@ export default function Home() {
 
         const uploadResult = await res.json();
         evidenceFileId = uploadResult.fileId || "";
+        if (uploadResult.sheetsSuccess === false) {
+          sheetsWarning = uploadResult.sheetsError || "Unknown error";
+        }
       } catch (error: unknown) {
         console.error("Error uploading file:", error);
         const message =
@@ -226,7 +231,13 @@ export default function Home() {
       ...currentActivities,
     ]);
     console.log("Activity ready for backend save:", activityPayload);
-    setSavedMessage("Activity saved successfully.");
+    
+    if (sheetsWarning) {
+      setSavedMessage(`PDF uploaded, but Google Sheets update failed: ${sheetsWarning}`);
+    } else {
+      setSavedMessage("Activity saved successfully.");
+    }
+    
     setEvidenceFile(null);
     setEvidenceFileName("");
     setFormValues({});
@@ -502,8 +513,12 @@ function AddActivityView({
               </div>
 
               {savedMessage ? (
-                <p className="mt-4 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-700">
-                  <Icon name="check" className="h-4 w-4" />
+                <p className={`mt-4 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-bold ${savedMessage.includes("failed") ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-emerald-50 text-emerald-700"}`}>
+                  {savedMessage.includes("failed") ? (
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                  ) : (
+                    <Icon name="check" className="h-4 w-4" />
+                  )}
                   {savedMessage}
                 </p>
               ) : null}
