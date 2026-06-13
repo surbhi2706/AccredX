@@ -23,6 +23,7 @@ import ReportPreviewModal from "@/components/ReportPreviewModal";
 import CvPreviewModal from "@/components/CvPreviewModal";
 import ProfileForm from "@/components/ProfileForm";
 import TimelineView from "@/components/TimelineView";
+import CourseActivityHubView from "@/components/CourseActivityHubView";
 import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
 
@@ -52,6 +53,10 @@ const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
   timeline: {
     title: "Document Timeline",
     subtitle: "Track and manage your uploaded evidence documents by academic year.",
+  },
+  "course-activity-hub": {
+    title: "Course Activity Hub",
+    subtitle: "Complete teaching history, activity tracking, and accreditation evidence.",
   },
 };
 
@@ -338,6 +343,10 @@ export default function Home() {
 
           {activeView === "timeline" ? (
             <TimelineView activities={savedActivities} />
+          ) : null}
+
+          {activeView === "course-activity-hub" ? (
+            <CourseActivityHubView />
           ) : null}
         </main>
       </div>
@@ -786,6 +795,7 @@ function MobileNav({
     { id: "reports", label: "Reports" },
     { id: "profile", label: "Profile" },
     { id: "timeline", label: "Timeline" },
+    { id: "course-activity-hub", label: "Activity Hub" },
   ];
 
   return (

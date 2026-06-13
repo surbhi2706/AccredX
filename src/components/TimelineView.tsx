@@ -29,6 +29,7 @@ type DocumentRecord = {
   fileId?: string;
   academicYear: string;
   isMock: boolean;
+  branch?: string;
 };
 
 const academicYears = ["2025-2026", "2024-2025", "2023-2024"] as const;
@@ -44,6 +45,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2025-26",
     isMock: true,
+    branch: "Information Technology (IT)",
   },
   {
     id: 102,
@@ -54,6 +56,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2025-26",
     isMock: true,
+    branch: "Computer Engineering (COMP)",
   },
   {
     id: 201,
@@ -64,6 +67,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2024-25",
     isMock: true,
+    branch: "Artificial Intelligence and Data Science (AIDS)",
   },
   {
     id: 202,
@@ -74,6 +78,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2024-25",
     isMock: true,
+    branch: "Electronics and Telecommunication Engineering (EXTC)",
   },
   {
     id: 301,
@@ -84,6 +89,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2023-24",
     isMock: true,
+    branch: "Computer and Communication Engineering (CCE)",
   },
   {
     id: 302,
@@ -94,6 +100,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2023-24",
     isMock: true,
+    branch: "Information Technology (IT)",
   },
 ];
 
@@ -115,6 +122,7 @@ export default function TimelineView({ activities }: TimelineViewProps) {
       fileId: act.evidenceFileId,
       academicYear: act.academicYear,
       isMock: false,
+      branch: (act as any).branch || "General",
     }));
 
   // PRIORITY RULE: Use real activity data first. Show mock data ONLY when no real documents exist.
@@ -315,6 +323,7 @@ export default function TimelineView({ activities }: TimelineViewProps) {
                 <tr className="border-b border-slate-200 text-gray-400 font-extrabold uppercase text-[10px] tracking-wider">
                   <th className="py-3 font-black">Document Name</th>
                   <th className="py-3 font-black">Upload Date</th>
+                  <th className="py-3 font-black">Branch</th>
                   <th className="py-3 font-black">Category</th>
                   <th className="py-3 font-black text-center w-24">File Type</th>
                   <th className="py-3 font-black text-center w-24">View</th>
@@ -342,6 +351,11 @@ export default function TimelineView({ activities }: TimelineViewProps) {
                     {/* Upload Date */}
                     <td className="py-3.5 pr-4 align-middle font-bold text-slate-500 whitespace-nowrap">
                       {doc.uploadDate}
+                    </td>
+
+                    {/* Branch */}
+                    <td className="py-3.5 pr-4 align-middle text-xs font-black text-red-700 whitespace-nowrap">
+                      {doc.branch || "General"}
                     </td>
 
                     {/* Category */}
@@ -451,7 +465,7 @@ export default function TimelineView({ activities }: TimelineViewProps) {
                               {doc.name}
                             </a>
                             <p className="text-xs font-semibold text-gray-400 mt-0.5 leading-relaxed truncate">
-                              {doc.category}
+                              {doc.branch ? `${doc.branch} • ` : ""}{doc.category}
                             </p>
                           </div>
                         </div>
