@@ -90,6 +90,9 @@ export default function Home() {
   const [evidenceFileName, setEvidenceFileName] = useState("");
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  const [activityLoadError, setActivityLoadError] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [savedProfile, setSavedProfile] = useState<any>(null);
 
@@ -105,6 +108,50 @@ export default function Home() {
   }, []);
 
   const { data: session, status } = useSession();
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user?.email) return;
+
+    const controller = new AbortController();
+
+    async function loadActivities() {
+      setIsLoadingActivities(true);
+      setActivityLoadError("");
+
+      try {
+        const response = await fetch("/api/activities", {
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to load saved activities.");
+        }
+
+        if (!controller.signal.aborted) {
+          setSavedActivities(
+            Array.isArray(result.activities) ? result.activities : []
+          );
+        }
+      } catch (error: unknown) {
+        if (controller.signal.aborted) return;
+        console.error("Error loading saved activities:", error);
+        setActivityLoadError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load saved activities."
+        );
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoadingActivities(false);
+        }
+      }
+    }
+
+    loadActivities();
+    return () => controller.abort();
+  }, [session?.user?.email, status]);
+
   const currentUser: UserProfile | null = session?.user
     ? {
         name: savedProfile?.fullName || session.user.name || "Faculty Member",
@@ -189,20 +236,30 @@ export default function Home() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isSaving) return;
+
+    setIsSaving(true);
 
     let evidenceFileId = "";
     let sheetsWarning = "";
+    let repositoryWarning = "";
+    let activityId = Date.now();
+    let createdAt = new Date().toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
 
-    if (evidenceFile) {
-      setSavedMessage("Uploading evidence...");
-      const formData = new FormData();
-      formData.append("file", evidenceFile);
-      formData.append("academicYear", year);
-      formData.append("pmsCategory", category);
-      formData.append("activityType", selectedDetailedActivity?.activity || activity);
-      formData.append("metadata", JSON.stringify(formValues));
+    try {
+      if (evidenceFile) {
+        setSavedMessage("Uploading evidence...");
+        const formData = new FormData();
+        formData.append("file", evidenceFile);
+        formData.append("academicYear", year);
+        formData.append("pmsCategory", category);
+        formData.append("activityType", selectedDetailedActivity?.activity || activity);
+        formData.append("metadata", JSON.stringify(formValues));
 
-      try {
         const res = await fetch("/api/upload", {
           method: "POST",
           body: formData,
@@ -215,49 +272,70 @@ export default function Home() {
 
         const uploadResult = await res.json();
         evidenceFileId = uploadResult.fileId || "";
+        repositoryWarning = uploadResult.repositoryWarning || "";
         if (uploadResult.sheetsSuccess === false) {
           sheetsWarning = uploadResult.sheetsError || "Unknown error";
         }
-      } catch (error: unknown) {
-        console.error("Error uploading file:", error);
-        const message =
-          error instanceof Error ? error.message : "Unknown error";
-        setSavedMessage(`Failed to upload evidence: ${message}`);
-        return;
+      } else {
+        setSavedMessage("Saving activity...");
+        const response = await fetch("/api/activities", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            academicYear: year,
+            pmsCategory: category,
+            pmsSection: selectedDetailedActivity?.section || "",
+            activityType: selectedDetailedActivity?.activity || activity,
+            data: formValues,
+          }),
+        });
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to save activity.");
+        }
+
+        activityId = result.id || activityId;
+        createdAt = result.createdAt || createdAt;
       }
-    }
 
-    const activityPayload: SavedActivity = {
-      id: Date.now(),
-      academicYear: year,
-      pmsCategory: category,
-      pmsSection: selectedDetailedActivity?.section || "",
-      activityType: selectedDetailedActivity?.activity || activity,
-      data: formValues,
-      evidenceFileName,
-      evidenceFileId,
-      createdAt: new Date().toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }),
-    };
+      const activityPayload: SavedActivity = {
+        id: activityId,
+        academicYear: year,
+        pmsCategory: category,
+        pmsSection: selectedDetailedActivity?.section || "",
+        activityType: selectedDetailedActivity?.activity || activity,
+        data: formValues,
+        evidenceFileName,
+        evidenceFileId,
+        createdAt,
+      };
 
-    setSavedActivities((currentActivities) => [
-      activityPayload,
-      ...currentActivities,
-    ]);
-    console.log("Activity ready for backend save:", activityPayload);
-    
-    if (sheetsWarning) {
-      setSavedMessage(`PDF uploaded, but Google Sheets update failed: ${sheetsWarning}`);
-    } else {
-      setSavedMessage("Activity saved successfully.");
+      setSavedActivities((currentActivities) => [
+        activityPayload,
+        ...currentActivities,
+      ]);
+      console.log("Activity ready for backend save:", activityPayload);
+
+      if (sheetsWarning) {
+        setSavedMessage(`PDF uploaded, but Google Sheets update failed: ${sheetsWarning}`);
+      } else if (repositoryWarning) {
+        setSavedMessage(`Activity saved successfully. ${repositoryWarning}`);
+      } else {
+        setSavedMessage("Activity saved successfully.");
+      }
+
+      setEvidenceFile(null);
+      setEvidenceFileName("");
+      setFormValues({});
+    } catch (error: unknown) {
+      console.error("Error uploading file:", error);
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+      setSavedMessage(`Failed to upload evidence: ${message}`);
+    } finally {
+      setIsSaving(false);
     }
-    
-    setEvidenceFile(null);
-    setEvidenceFileName("");
-    setFormValues({});
   }
 
   if (status === "loading") {
@@ -306,8 +384,9 @@ export default function Home() {
   completedSteps={completedSteps}
   evidenceFileName={evidenceFileName}
   fields={fields}
-  formValues={formValues}
-  savedMessage={savedMessage}
+	  formValues={formValues}
+	  isSaving={isSaving}
+	  savedMessage={savedMessage}
   year={year}
   onActivityChange={(value) => {
     handleActivityChange(value);
@@ -338,7 +417,11 @@ export default function Home() {
           ) : null}
 
           {activeView === "my-activities" ? (
-            <MyActivitiesView activities={savedActivities} />
+            <MyActivitiesView
+              activities={savedActivities}
+              error={activityLoadError}
+              isLoading={isLoadingActivities}
+            />
           ) : null}
 
           {activeView === "reports" ? (
@@ -391,6 +474,7 @@ type AddActivityViewProps = {
   evidenceFileName: string;
   fields: ActivityField[];
   formValues: Record<string, string>;
+  isSaving: boolean;
   savedMessage: string;
   year: string;
   onActivityChange: (value: string) => void;
@@ -410,6 +494,7 @@ function AddActivityView({
   evidenceFileName,
   fields,
   formValues,
+  isSaving,
   savedMessage,
   year,
   onActivityChange,
@@ -527,9 +612,13 @@ function AddActivityView({
                   Required fields are marked in red.
                 </div>
 
-                <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100">
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-red-400"
+                >
                   <Icon name="check" className="h-4.5 w-4.5" />
-                  Save Activity
+                  {isSaving ? "Saving Activity..." : "Save Activity"}
                 </button>
               </div>
 
@@ -641,7 +730,7 @@ function DashboardView({
               Submission Progress
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              Evidence completion for activities saved in this session.
+              Evidence completion for activities synced with Google Sheets.
             </p>
           </div>
           <button
@@ -688,14 +777,30 @@ function DashboardView({
   );
 }
 
-function MyActivitiesView({ activities }: { activities: SavedActivity[] }) {
+function MyActivitiesView({
+  activities,
+  error,
+  isLoading,
+}: {
+  activities: SavedActivity[];
+  error: string;
+  isLoading: boolean;
+}) {
   return (
     <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
       <h2 className="text-xl font-black tracking-tight text-gray-950">
         Uploaded Activities
       </h2>
 
-      {activities.length ? (
+      {isLoading ? (
+        <p className="mt-5 text-sm font-bold text-gray-500">
+          Loading activities from Google Sheets...
+        </p>
+      ) : error ? (
+        <p className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-700">
+          Could not load Google Sheets activities: {error}
+        </p>
+      ) : activities.length ? (
         <div className="mt-5 space-y-3">
           {activities.map((item) => (
             <ActivityListItem key={item.id} activity={item} />
