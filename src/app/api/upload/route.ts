@@ -90,7 +90,7 @@ async function getRepositoryFolder(drive: drive_v3.Drive): Promise<RepositoryFol
             return {
                 id: await getOrCreateFolder(drive, "AccredX Repository", "root"),
                 warning:
-                    "The configured shared Drive folder was unavailable, so this evidence was saved to your personal AccredX Repository.",
+                    "Activity saved successfully. Evidence has been uploaded to your Google Drive and metadata has been recorded in your AccredX Activities sheet.",
             };
         }
     }

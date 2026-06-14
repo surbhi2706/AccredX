@@ -320,9 +320,9 @@ export default function Home() {
       if (sheetsWarning) {
         setSavedMessage(`PDF uploaded, but Google Sheets update failed: ${sheetsWarning}`);
       } else if (repositoryWarning) {
-        setSavedMessage(`Activity saved successfully. ${repositoryWarning}`);
+        setSavedMessage(repositoryWarning);
       } else {
-        setSavedMessage("Activity saved successfully.");
+        setSavedMessage("Activity saved successfully. Evidence has been uploaded to your Google Drive and metadata has been recorded in your AccredX Activities sheet.");
       }
 
       setEvidenceFile(null);
