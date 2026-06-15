@@ -25,10 +25,6 @@ type Course = {
   type: "theory" | "laboratory" | "project" | "seminar" | "projectwork";
 };
 
-type SemesterMap = Record<string, Course[]>;
-type BranchMap = Record<string, SemesterMap>;
-type YearMap = Record<string, BranchMap>;
-
 const branchesList = [
   "Computer Engineering (COMP)",
   "Information Technology (IT)",
@@ -53,176 +49,6 @@ const semestersList = [
   "Semester 8"
 ];
 
-type BaseSubject = {
-  name: string;
-  hasLab: boolean;
-};
-
-// Base subjects mapped to Semesters 1-8 for each branch with realistic lab counterparts
-const branchBases: Record<string, BaseSubject[]> = {
-  "Computer Engineering (COMP)": [
-    { name: "Applied Mathematics-I", hasLab: false },
-    { name: "Structured Programming Approach", hasLab: true },
-    { name: "Data Structures", hasLab: true },
-    { name: "Database Management Systems", hasLab: true },
-    { name: "Operating Systems", hasLab: true },
-    { name: "Artificial Intelligence", hasLab: true },
-    { name: "Machine Learning", hasLab: true },
-    { name: "Distributed Computing", hasLab: true }
-  ],
-  "Information Technology (IT)": [
-    { name: "Applied Mathematics-I", hasLab: false },
-    { name: "Structured Programming Approach", hasLab: true },
-    { name: "Data Structures & Analysis", hasLab: true },
-    { name: "Database Management Systems", hasLab: true },
-    { name: "Software Engineering", hasLab: false },
-    { name: "Web Application Development", hasLab: true },
-    { name: "Cloud Computing", hasLab: true },
-    { name: "Big Data Analytics", hasLab: true }
-  ],
-  "Artificial Intelligence and Data Science (AIDS)": [
-    { name: "Applied Mathematics-I", hasLab: false },
-    { name: "Python for Data Science", hasLab: true },
-    { name: "Data Structures & Algorithms", hasLab: true },
-    { name: "Statistical Inference", hasLab: false },
-    { name: "Machine Learning Basics", hasLab: true },
-    { name: "Deep Learning", hasLab: true },
-    { name: "Natural Language Processing", hasLab: true },
-    { name: "Computer Vision", hasLab: true }
-  ],
-  "Electronics and Telecommunication Engineering (EXTC)": [
-    { name: "Applied Physics-I", hasLab: false },
-    { name: "Electronic Devices & Circuits", hasLab: true },
-    { name: "Signals & Systems", hasLab: false },
-    { name: "Microprocessors & Microcontrollers", hasLab: true },
-    { name: "Electromagnetic Wave Propagation", hasLab: false },
-    { name: "Digital Communication", hasLab: true },
-    { name: "Mobile Communication Systems", hasLab: true },
-    { name: "Satellite Communication", hasLab: false }
-  ],
-  "Electronics and Computer Engineering (EXCP)": [
-    { name: "Applied Physics-I", hasLab: false },
-    { name: "Electrical Technology", hasLab: true },
-    { name: "Digital Logic Design", hasLab: true },
-    { name: "Computer Organization & Architecture", hasLab: false },
-    { name: "Microcontrollers & Applications", hasLab: true },
-    { name: "Embedded Systems Design", hasLab: true },
-    { name: "Internet of Things (IoT)", hasLab: true },
-    { name: "VLSI Design", hasLab: true }
-  ],
-  "Computer Science and Business Systems (CSBS)": [
-    { name: "Applied Mathematics-I", hasLab: false },
-    { name: "Discrete Mathematics", hasLab: false },
-    { name: "Data Structures & Algorithms", hasLab: true },
-    { name: "Business Communication & Value Science", hasLab: false },
-    { name: "Software Engineering & Finance", hasLab: false },
-    { name: "Design Thinking", hasLab: false },
-    { name: "Cognitive Science & Analytics", hasLab: true },
-    { name: "Enterprise Systems", hasLab: true }
-  ],
-  "Mechanical Engineering (MECH)": [
-    { name: "Systems in Mechanical Engineering", hasLab: false },
-    { name: "Engineering Graphics & Drafting", hasLab: true },
-    { name: "Strength of Materials", hasLab: false },
-    { name: "Fluid Mechanics", hasLab: true },
-    { name: "Thermodynamics & Heat Transfer", hasLab: true },
-    { name: "CAD/CAM & Robotics", hasLab: true },
-    { name: "Refrigeration & Air Conditioning", hasLab: true },
-    { name: "Industrial Engineering & Management", hasLab: false }
-  ],
-  "Computer and Communication Engineering (CCE)": [
-    { name: "Applied Mathematics-I", hasLab: false },
-    { name: "Fundamentals of Communication", hasLab: true },
-    { name: "Network Analysis & Synthesis", hasLab: false },
-    { name: "Operating Systems & Programming", hasLab: true },
-    { name: "Digital Signal Processing", hasLab: true },
-    { name: "Computer Networks & Security", hasLab: true },
-    { name: "Wireless Networks & Security", hasLab: true },
-    { name: "Cyber Security & Forensics", hasLab: true }
-  ],
-  "Robotics and Artificial Intelligence (RAI)": [
-    { name: "Systems in Mechanical Engineering", hasLab: false },
-    { name: "Robotics Programming", hasLab: true },
-    { name: "Kinematics of Machines", hasLab: false },
-    { name: "Sensors & Actuators", hasLab: true },
-    { name: "Robot Dynamics & Control", hasLab: true },
-    { name: "Autonomous Robotics", hasLab: true },
-    { name: "Artificial Intelligence in Robotics", hasLab: true },
-    { name: "Human-Robot Interaction", hasLab: false }
-  ],
-  "VLSI Design and Technology (VLSI)": [
-    { name: "Applied Physics-I", hasLab: false },
-    { name: "Basic Semiconductor Physics", hasLab: false },
-    { name: "Digital Logic Design", hasLab: true },
-    { name: "CMOS Analog Circuits", hasLab: true },
-    { name: "HDL Programming (Verilog/VHDL)", hasLab: true },
-    { name: "VLSI Physical Design", hasLab: true },
-    { name: "Testing & Verification of VLSI Circuits", hasLab: true },
-    { name: "System-on-Chip (SoC) Design", hasLab: true }
-  ]
-};
-
-// Programmatically build the complete dataTree supporting both Theory, Laboratory, Mini Project, Seminar, and Project Work
-const dataTree: YearMap = {};
-const academicYearsList = ["2023-2024", "2024-2025", "2025-2026"];
-
-for (const yr of academicYearsList) {
-  dataTree[yr] = {};
-  for (const br of branchesList) {
-    dataTree[yr][br] = {};
-    const branchCode = br.match(/\(([^)]+)\)/)?.[1] || "GEN";
-
-    semestersList.forEach((sem, index) => {
-      const semesterNum = index + 1;
-      const baseSubject = branchBases[br]?.[index] || { name: "Selected Subject", hasLab: false };
-      
-      const courses: Course[] = [
-        {
-          code: `${branchCode}${semesterNum}01`,
-          name: `${baseSubject.name} (Theory)`,
-          type: "theory"
-        }
-      ];
-
-      if (baseSubject.hasLab) {
-        courses.push({
-          code: `${branchCode}L${semesterNum}01`,
-          name: `${baseSubject.name} Laboratory`,
-          type: "laboratory"
-        });
-      }
-
-      // Add Mini Project in Semester 4
-      if (semesterNum === 4) {
-        courses.push({
-          code: `${branchCode}P401`,
-          name: `Mini Project - ${branchCode} Web Apps`,
-          type: "project"
-        });
-      }
-
-      // Add Seminar in Semester 6
-      if (semesterNum === 6) {
-        courses.push({
-          code: `${branchCode}S601`,
-          name: `Technical Seminar on ${baseSubject.name}`,
-          type: "seminar"
-        });
-      }
-
-      // Add Project Work in Semester 8
-      if (semesterNum === 8) {
-        courses.push({
-          code: `${branchCode}W801`,
-          name: `Capstone Project Work`,
-          type: "projectwork"
-        });
-      }
-
-      dataTree[yr][br][sem] = courses;
-    });
-  }
-}
 
 // Generates high-fidelity realistic accreditation-compliant activity mock data based on Course Type selection
 function generateMockActivities(
@@ -685,146 +511,489 @@ function generateMockActivities(
   return activities;
 }
 
+export type CourseMapping = {
+  id: string;
+  academicYear: string;
+  branch: string;
+  semester: string;
+  courseCode: string;
+  courseName: string;
+  syllabusFile: { name: string; size?: number; type?: string } | null;
+  uploadedBy: string;
+  uploadedAt: string;
+};
+
+export type PortfolioDocument = {
+  documentId: string;
+  portfolioId: string;
+  category: string;
+  documentType: string;
+  fileName: string;
+  fileSize?: number;
+  uploadedBy: string;
+  uploadedAt: string;
+};
+
+export const categoryDocTypes: Record<string, string[]> = {
+  "Teaching Documents": ["Syllabus", "Lesson Plan", "Lecture Notes", "PPT", "Lab Manual", "Tutorial Sheet"],
+  "Assessments": ["Question Paper", "Answer Key", "Internal Assessment", "Unit Test", "Mid Semester Exam", "End Semester Exam", "Marksheet", "Result Analysis"],
+  "Activities": ["Assignment", "Quiz", "Project", "Remedial Class Record", "Student Activity"],
+  "Attendance": ["Attendance Sheet", "Defaulter List"],
+  "Accreditation Evidence": ["CO Mapping", "PO Mapping", "CO-PO Attainment", "Student Feedback", "Course Exit Survey", "NBA Evidence", "NAAC Evidence", "Academic Audit Document"],
+  "Events": ["Workshop", "Seminar", "Guest Lecture", "FDP", "Industrial Visit"]
+};
+
+function getStandardCategory(activityType: string): string {
+  const t = activityType.toLowerCase();
+  
+  // Teaching Documents options: Syllabus, Lesson Plan, Lecture Notes, PPT, Lab Manual, Tutorial Sheet
+  if (
+    t.includes("course plan") ||
+    t.includes("lesson plan") ||
+    t.includes("lecture notes") ||
+    t.includes("ppt") ||
+    t.includes("lab manual") ||
+    t.includes("experiment list") ||
+    t.includes("guidelines and assessment rubrics") ||
+    t.includes("tutorial sheet")
+  ) {
+    return "Teaching Documents";
+  }
+  
+  // Assessments options: Question Paper, Answer Key, Internal Assessment, Unit Test, Mid Semester Exam, End Semester Exam, Marksheet, Result Analysis
+  if (
+    t.includes("mid-sem exam") ||
+    t.includes("end-sem exam") ||
+    t.includes("result analysis") ||
+    t.includes("practical question bank") ||
+    t.includes("practical assessment") ||
+    t.includes("examination record") ||
+    t.includes("viva") ||
+    t.includes("synopsis/presentation review") ||
+    t.includes("marksheet") ||
+    t.includes("question paper") ||
+    t.includes("answer key") ||
+    t.includes("internal assessment") ||
+    t.includes("unit test")
+  ) {
+    return "Assessments";
+  }
+  
+  // Activities options: Assignment, Quiz, Project, Remedial Class Record, Student Activity
+  if (
+    t.includes("assignment") ||
+    t.includes("quiz") ||
+    t.includes("student submission") ||
+    t.includes("student group allocation") ||
+    t.includes("weekly progress log") ||
+    t.includes("project report") ||
+    t.includes("remedial") ||
+    t.includes("project") ||
+    t.includes("student activity")
+  ) {
+    return "Activities";
+  }
+  
+  // Attendance options: Attendance Sheet, Defaulter List
+  if (
+    t.includes("attendance") ||
+    t.includes("defaulter list")
+  ) {
+    return "Attendance";
+  }
+  
+  // Accreditation Evidence options: CO Mapping, PO Mapping, CO-PO Attainment, Course Exit Survey, Student Feedback, Academic Audit Document, NBA Evidence, NAAC Evidence
+  if (
+    t.includes("attainment") ||
+    t.includes("feedback") ||
+    t.includes("co mapping") ||
+    t.includes("po mapping") ||
+    t.includes("audit") ||
+    t.includes("nba") ||
+    t.includes("naac") ||
+    t.includes("problem statement approval") ||
+    t.includes("exit survey")
+  ) {
+    return "Accreditation Evidence";
+  }
+  
+  // Events options: Workshop, Seminar, Guest Lecture, FDP, Industrial Visit
+  if (
+    t.includes("workshop") ||
+    t.includes("seminar") ||
+    t.includes("guest lecture") ||
+    t.includes("fdp") ||
+    t.includes("industrial visit")
+  ) {
+    return "Events";
+  }
+  
+  return "Teaching Documents"; // fallback
+}
+
 export default function CourseActivityHubView() {
   const academicYears = ["2023-2024", "2024-2025", "2025-2026"];
 
   const [selectedYear, setSelectedYear] = useState<string>("2025-2026");
+  const [selectedBranch, setSelectedBranch] = useState<string>(branchesList[0]);
+  const [selectedSemester, setSelectedSemester] = useState<string>(semestersList[0]);
 
-  // Dependent Branch list based on Year
-  const yearBranchesMap = dataTree[selectedYear] || {};
-  const branches = Object.keys(yearBranchesMap);
-  const [selectedBranch, setSelectedBranch] = useState<string>(branches[0] || "");
+  // Text inputs for Course details
+  const [inputCourseName, setInputCourseName] = useState<string>("Applied Mathematics-I (Theory)");
+  const [inputCourseCode, setInputCourseCode] = useState<string>("COMP101");
 
-  // Update default branch when academic year changes
-  const handleYearChange = (year: string) => {
-    setSelectedYear(year);
-    const newBranchesMap = dataTree[year] || {};
-    const newBranches = Object.keys(newBranchesMap);
-    if (newBranches.length > 0) {
-      setSelectedBranch(newBranches[0]);
-      const semestersMap = newBranchesMap[newBranches[0]] || {};
-      const newSemesters = Object.keys(semestersMap);
-      if (newSemesters.length > 0) {
-        setSelectedSemester(newSemesters[0]);
-        const newCourses = semestersMap[newSemesters[0]] || [];
-        if (newCourses.length > 0) {
-          setSelectedCourseCode(newCourses[0].code);
-        } else {
-          setSelectedCourseCode("");
-        }
-      } else {
-        setSelectedSemester("");
-        setSelectedCourseCode("");
-      }
+  // Track if a saved mapping is selected
+  const [selectedMappingId, setSelectedMappingId] = useState<string>("mapping-default-1");
+
+  // Linked Category and Document Type state variables for staging
+  const [selectedCategory, setSelectedCategory] = useState<string>("Teaching Documents");
+  const [selectedDocType, setSelectedDocType] = useState<string>("Syllabus");
+  const [uploadedFile, setUploadedFile] = useState<{ name: string; size?: number; type?: string } | null>(null);
+
+  // --- FACULTY COURSE OWNFLOW STATE ---
+  const [courseMappings, setCourseMappings] = useState<CourseMapping[]>([
+    {
+      id: "mapping-default-1",
+      academicYear: "2025-2026",
+      branch: "Computer Engineering (COMP)",
+      semester: "Semester 1",
+      courseCode: "COMP101",
+      courseName: "Applied Mathematics-I (Theory)",
+      syllabusFile: null,
+      uploadedBy: "Faculty Member",
+      uploadedAt: new Date().toISOString()
+    },
+    {
+      id: "mapping-default-2",
+      academicYear: "2025-2026",
+      branch: "Computer Engineering (COMP)",
+      semester: "Semester 3",
+      courseCode: "COMP301",
+      courseName: "Data Structures & Algorithms",
+      syllabusFile: null,
+      uploadedBy: "Faculty Member",
+      uploadedAt: new Date().toISOString()
+    }
+  ]);
+
+  const [portfolioDocuments, setPortfolioDocuments] = useState<PortfolioDocument[]>([
+    {
+      documentId: "doc-default-1",
+      portfolioId: "mapping-default-1",
+      category: "Teaching Documents",
+      documentType: "Syllabus",
+      fileName: "Applied_Math_I_Syllabus.pdf",
+      fileSize: 154200,
+      uploadedBy: "Faculty Member",
+      uploadedAt: new Date(Date.now() - 86400000 * 5).toISOString()
+    },
+    {
+      documentId: "doc-default-2",
+      portfolioId: "mapping-default-1",
+      category: "Assessments",
+      documentType: "Mid Semester Exam",
+      fileName: "Applied_Math_I_MidSem_QP.pdf",
+      fileSize: 112000,
+      uploadedBy: "Faculty Member",
+      uploadedAt: new Date(Date.now() - 86400000 * 3).toISOString()
+    },
+    {
+      documentId: "doc-default-3",
+      portfolioId: "mapping-default-1",
+      category: "Accreditation Evidence",
+      documentType: "CO-PO Attainment",
+      fileName: "Applied_Math_I_CO_PO_Attainment.xlsx",
+      fileSize: 45000,
+      uploadedBy: "Faculty Member",
+      uploadedAt: new Date(Date.now() - 86400000 * 1).toISOString()
+    }
+  ]);
+
+  // --- HANDLERS ---
+  const handleUploadSyllabus = (file: File) => {
+    console.log("handleUploadSyllabus invoked with file:", file.name, file.size);
+    setUploadedFile({
+      name: file.name,
+      size: file.size,
+      type: file.type
+    });
+  };
+
+  const handleSaveCourseMapping = () => {
+    console.log("handleSaveCourseMapping invoked");
+    const courseName = inputCourseName.trim();
+    const courseCode = inputCourseCode.trim();
+
+    if (!courseName) {
+      alert("Please enter a Course Name.");
+      return;
+    }
+    if (!courseCode) {
+      alert("Please enter a Course Code.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const uploadedBy = "Faculty Member";
+
+    // Check if mapping already exists for the selected academicYear + branch + semester + courseCode
+    const existingIndex = courseMappings.findIndex(m =>
+      m.academicYear === selectedYear &&
+      m.branch === selectedBranch &&
+      m.semester === selectedSemester &&
+      m.courseCode === courseCode
+    );
+
+    if (existingIndex !== -1) {
+      // Update existing mapping
+      setCourseMappings(prev => prev.map((m, idx) => idx === existingIndex ? {
+        ...m,
+        courseName,
+        uploadedAt: now,
+        uploadedBy
+      } : m));
+      alert("Course portfolio target updated successfully!");
     } else {
-      setSelectedBranch("");
-      setSelectedSemester("");
-      setSelectedCourseCode("");
+      // Create new mapping
+      const newMapping: CourseMapping = {
+        id: `mapping-${Date.now()}`,
+        academicYear: selectedYear,
+        branch: selectedBranch,
+        semester: selectedSemester,
+        courseCode,
+        courseName,
+        syllabusFile: null,
+        uploadedBy,
+        uploadedAt: now
+      };
+      setCourseMappings(prev => [...prev, newMapping]);
+      setSelectedMappingId(newMapping.id);
+      alert("Course portfolio target saved successfully!");
     }
   };
 
-  // Dependent Semester list based on Branch
-  const branchSemestersMap = yearBranchesMap[selectedBranch] || {};
-  const semesters = Object.keys(branchSemestersMap);
-  const [selectedSemester, setSelectedSemester] = useState<string>(semesters[0] || "");
+  const handleSaveEvidenceDocument = () => {
+    console.log("handleSaveEvidenceDocument invoked");
+    const courseName = inputCourseName.trim();
+    const courseCode = inputCourseCode.trim();
+
+    if (!courseName || !courseCode) {
+      alert("Please define the Course Name and Course Code before uploading evidence.");
+      return;
+    }
+
+    if (!uploadedFile) {
+      alert("Please select a document file to upload.");
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const uploadedBy = "Faculty Member";
+
+    // 1. Find or create the CourseMapping portfolio
+    let activeMapping = courseMappings.find(m =>
+      m.academicYear === selectedYear &&
+      m.branch === selectedBranch &&
+      m.semester === selectedSemester &&
+      m.courseCode === courseCode
+    );
+
+    let mappingId = "";
+    if (activeMapping) {
+      mappingId = activeMapping.id;
+    } else {
+      // Create new mapping on the fly
+      const newMappingId = `mapping-${Date.now()}`;
+      const newMapping: CourseMapping = {
+        id: newMappingId,
+        academicYear: selectedYear,
+        branch: selectedBranch,
+        semester: selectedSemester,
+        courseCode,
+        courseName,
+        syllabusFile: null,
+        uploadedBy,
+        uploadedAt: now
+      };
+      setCourseMappings(prev => [...prev, newMapping]);
+      setSelectedMappingId(newMappingId);
+      mappingId = newMappingId;
+    }
+
+    // 2. Add the document to portfolioDocuments list
+    const newDoc: PortfolioDocument = {
+      documentId: `doc-${Date.now()}`,
+      portfolioId: mappingId,
+      category: selectedCategory,
+      documentType: selectedDocType,
+      fileName: uploadedFile.name,
+      fileSize: uploadedFile.size,
+      uploadedBy,
+      uploadedAt: now
+    };
+
+    setPortfolioDocuments(prev => [...prev, newDoc]);
+    setUploadedFile(null);
+    alert(`Evidence document [${selectedDocType}] successfully mapped and uploaded to portfolio!`);
+  };
+
+  const handleEditMapping = (id: string) => {
+    console.log("handleEditMapping invoked internally with ID:", id);
+  };
+
+  const handleDeleteMapping = (id: string) => {
+    console.log("handleDeleteMapping invoked with ID:", id);
+    if (confirm("Are you sure you want to remove this course target?")) {
+      setCourseMappings(prev => prev.filter(m => m.id !== id));
+      // Reset active states if deleted mapping was selected
+      if (selectedMappingId === id) {
+        setSelectedMappingId("");
+        setUploadedFile(null);
+      }
+    }
+  };
+
+  const handleDeleteDocument = (documentId: string) => {
+    if (confirm("Are you sure you want to remove this evidence document from the course portfolio?")) {
+      setPortfolioDocuments(prev => prev.filter(doc => doc.documentId !== documentId));
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const ext = file.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'pdf' && ext !== 'docx') {
+        alert("Please upload only PDF or DOCX files.");
+        return;
+      }
+      handleUploadSyllabus(file);
+    }
+  };
+
+  const handleRemoveFile = () => {
+    setUploadedFile(null);
+  };
+
+  // Sync state helpers when filters change (clearing the staged uploadedFile state to prevent layout confusion)
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    const mapping = courseMappings.find(m => m.academicYear === year && m.branch === selectedBranch && m.semester === selectedSemester);
+    if (mapping) {
+      setSelectedMappingId(mapping.id);
+      setInputCourseName(mapping.courseName);
+      setInputCourseCode(mapping.courseCode);
+      setUploadedFile(null);
+    } else {
+      setSelectedMappingId("");
+      setInputCourseName("");
+      setInputCourseCode("");
+      setUploadedFile(null);
+    }
+  };
 
   const handleBranchChange = (branch: string) => {
     setSelectedBranch(branch);
-    const semestersMap = yearBranchesMap[branch] || {};
-    const newSemesters = Object.keys(semestersMap);
-    if (newSemesters.length > 0) {
-      setSelectedSemester(newSemesters[0]);
-      const newCourses = semestersMap[newSemesters[0]] || [];
-      if (newCourses.length > 0) {
-        setSelectedCourseCode(newCourses[0].code);
-      } else {
-        setSelectedCourseCode("");
-      }
+    const mapping = courseMappings.find(m => m.academicYear === selectedYear && m.branch === branch && m.semester === selectedSemester);
+    if (mapping) {
+      setSelectedMappingId(mapping.id);
+      setInputCourseName(mapping.courseName);
+      setInputCourseCode(mapping.courseCode);
+      setUploadedFile(null);
     } else {
-      setSelectedSemester("");
-      setSelectedCourseCode("");
+      setSelectedMappingId("");
+      setInputCourseName("");
+      setInputCourseCode("");
+      setUploadedFile(null);
     }
   };
-
-  // Dependent Course list based on Semester
-  const courses = branchSemestersMap[selectedSemester] || [];
-  const [selectedCourseCode, setSelectedCourseCode] = useState<string>(
-    courses[0]?.code || ""
-  );
 
   const handleSemesterChange = (semester: string) => {
     setSelectedSemester(semester);
-    const newCourses = branchSemestersMap[semester] || [];
-    if (newCourses.length > 0) {
-      setSelectedCourseCode(newCourses[0].code);
+    const mapping = courseMappings.find(m => m.academicYear === selectedYear && m.branch === selectedBranch && m.semester === semester);
+    if (mapping) {
+      setSelectedMappingId(mapping.id);
+      setInputCourseName(mapping.courseName);
+      setInputCourseCode(mapping.courseCode);
+      setUploadedFile(null);
     } else {
-      setSelectedCourseCode("");
+      setSelectedMappingId("");
+      setInputCourseName("");
+      setInputCourseCode("");
+      setUploadedFile(null);
     }
   };
 
-  // Ensure current selection stays in bounds
-  const currentBranch = branches.includes(selectedBranch)
-    ? selectedBranch
-    : branches[0] || "";
-  const currentSemester = semesters.includes(selectedSemester)
-    ? selectedSemester
-    : semesters[0] || "";
-  const currentCourseList =
-    (yearBranchesMap[currentBranch] || {})[currentSemester] || [];
-  const currentCourse =
-    currentCourseList.find((s) => s.code === selectedCourseCode) ||
-    currentCourseList[0];
+  const handleLoadMapping = (id: string) => {
+    if (id === "") {
+      setSelectedMappingId("");
+      setInputCourseName("");
+      setInputCourseCode("");
+      setUploadedFile(null);
+      return;
+    }
 
-  // Fallback state adjustments if selectors get out-of-sync
-  if (currentBranch && selectedBranch !== currentBranch) {
-    setSelectedBranch(currentBranch);
-  }
-  if (currentSemester && selectedSemester !== currentSemester) {
-    setSelectedSemester(currentSemester);
-  }
-  if (currentCourse && selectedCourseCode !== currentCourse.code) {
-    setSelectedCourseCode(currentCourse.code);
-  }
+    const mapping = courseMappings.find(m => m.id === id);
+    if (mapping) {
+      setSelectedMappingId(mapping.id);
+      setSelectedYear(mapping.academicYear);
+      setSelectedBranch(mapping.branch);
+      setSelectedSemester(mapping.semester);
+      setInputCourseName(mapping.courseName);
+      setInputCourseCode(mapping.courseCode);
+      setUploadedFile(null);
+    }
+  };
 
-  // Generate activities for current filters
-  const activities = (currentCourse && currentBranch)
-    ? generateMockActivities(selectedYear, currentBranch, currentSemester, currentCourse)
+  // Construct a dynamic course type to generate activities and accordions
+  const activeCourseName = inputCourseName.trim();
+  const activeCourseCode = inputCourseCode.trim();
+
+  // Helper to resolve course type dynamically
+  const getCourseTypeFromName = (name: string): "theory" | "laboratory" | "project" | "seminar" | "projectwork" => {
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes("laboratory") || lowerName.includes("lab") || lowerName.includes("practical")) {
+      return "laboratory";
+    }
+    if (lowerName.includes("capstone") || lowerName.includes("project work") || lowerName.includes("major project")) {
+      return "projectwork";
+    }
+    if (lowerName.includes("mini project") || lowerName.includes("project")) {
+      return "project";
+    }
+    if (lowerName.includes("seminar")) {
+      return "seminar";
+    }
+    return "theory";
+  };
+
+  const dynamicCourse: Course = {
+    code: activeCourseCode || "COURSE101",
+    name: activeCourseName || "Unnamed Course",
+    type: getCourseTypeFromName(activeCourseName)
+  };
+
+  // Generate activities for current selectors
+  const activities = (activeCourseName || activeCourseCode)
+    ? generateMockActivities(selectedYear, selectedBranch, selectedSemester, dynamicCourse)
     : [];
 
-  // Determine dynamic accordions based on selected course type
-  const getAccordionCategories = (type?: string) => {
-    if (type === "laboratory") {
-      return [
-        "Lab Resources & Setup",
-        "Lab Attendance & Execution",
-        "Assessments & Evaluation",
-        "Outcomes & Attainment"
-      ];
-    } else if (type === "theory") {
-      return [
-        "Teaching Documents",
-        "Assessments & Homework",
-        "Mid-Sem & End-Sem Exams",
-        "Execution & Outlines"
-      ];
-    } else {
-      // mini project / seminar / capstone project work
-      return [
-        "Guidelines & Allocation",
-        "Progress Monitoring",
-        "Evaluation Records",
-        "Outcomes & Attainments"
-      ];
-    }
-  };
+  // 6 standard categories for NAAC/NBA auditing
+  const standardAccordionCategories = [
+    "Teaching Documents",
+    "Assessments",
+    "Activities",
+    "Attendance",
+    "Accreditation Evidence",
+    "Events"
+  ];
 
-  const currentCategories = getAccordionCategories(currentCourse?.type);
+  const currentCategories = (activeCourseName || activeCourseCode) ? standardAccordionCategories : [];
 
   // Initialize expanded accordion sections dynamically
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     "Teaching Documents": true,
-    "Lab Resources & Setup": true,
-    "Guidelines & Allocation": true,
+    "Assessments": true,
   });
 
   const toggleSection = (cat: string) => {
@@ -834,55 +1003,92 @@ export default function CourseActivityHubView() {
     }));
   };
 
+  // Find if syllabus exists for the active portfolio
+  const activeSyllabusDoc = portfolioDocuments.find(
+    (doc) => doc.portfolioId === selectedMappingId && doc.documentType === "Syllabus"
+  );
+
   // Summary Metrics calculations
-  const totalBranches = branches.length;
-  const totalCourses = currentCourseList.length;
-  const totalActivities = activities.length;
-  
-  // Dynamic metrics derived from loaded lists
-  const totalDocuments = activities.filter(
-    (a) => a.category === "Teaching Documents" || a.category === "Lab Resources & Setup" || a.category === "Guidelines & Allocation"
-  ).length;
+  const totalBranches = new Set(courseMappings.map((m) => m.branch)).size;
+  const totalCourses = new Set(courseMappings.map((m) => m.courseCode)).size;
 
-  const totalAssessments = activities.filter(
-    (a) => a.category === "Mid-Sem & End-Sem Exams" || a.category === "Assessments & Evaluation" || a.category === "Evaluation Records"
-  ).length;
+  // Combined documents & activities in each category
+  const activePortfolioDocs = portfolioDocuments.filter(d => d.portfolioId === selectedMappingId);
+  const totalItemsCount = activePortfolioDocs.length + activities.length;
 
-  const totalWorkshops = activities.filter(
-    (a) => a.activityType === "Workshops" || a.category === "Progress Monitoring"
-  ).length;
+  const totalDocuments = activePortfolioDocs.filter(d => d.category === "Teaching Documents").length +
+    activities.filter(a => getStandardCategory(a.activityType) === "Teaching Documents").length;
+
+  const totalAssessmentsCount = activePortfolioDocs.filter(d => d.category === "Assessments").length +
+    activities.filter(a => getStandardCategory(a.activityType) === "Assessments").length;
+
+  const totalWorkshops = activePortfolioDocs.filter(d => d.category === "Events").length +
+    activities.filter(a => getStandardCategory(a.activityType) === "Events").length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Top Filter Panel */}
-      <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
-              <Icon name="book" className="h-5 w-5" />
+      <section className="rounded-3xl border border-red-100 bg-white p-5 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
+        <div className="flex flex-col gap-3.5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between pb-3.5 border-b border-red-50/50">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                <Icon name="book" className="h-5 w-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black tracking-tight text-gray-950">
+                  Course & Syllabus Mapping
+                </h2>
+                <p className="text-xs font-semibold text-gray-500 mt-0.5">
+                  Accreditation target definition and syllabus evidence uploader.
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-black tracking-tight text-gray-950">
-                Course Activity Hub
-              </h2>
-              <p className="text-xs font-semibold text-gray-500 mt-0.5">
-                Accreditation evidence repository mapped to NAAC/NBA metrics.
-              </p>
+
+            {/* Quick Load Course Selector */}
+            <div className="flex flex-col gap-1 sm:min-w-[200px] max-w-xs self-start lg:self-auto">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                <Icon name="history" className="h-3.5 w-3.5 text-gray-400" />
+                <span>Quick Load Course</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedMappingId}
+                  onChange={(e) => handleLoadMapping(e.target.value)}
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-slate-50 pl-3 pr-8 py-1.5 text-xs font-bold text-gray-700 outline-none transition hover:border-gray-300 hover:bg-slate-100 focus:border-red-500 focus:ring-4 focus:ring-red-50 truncate"
+                >
+                  <option value="">-- Create New Target --</option>
+                  {courseMappings.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.courseCode} ({m.academicYear})
+                    </option>
+                  ))}
+                </select>
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-3.5 w-3.5">
+                    <path
+                      fillRule="evenodd"
+                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Filter Dropdowns */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-4 md:w-auto w-full">
+          {/* Workflow Inputs Grid */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5 w-full">
             {/* Academic Year */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 Academic Year
               </label>
-              <div className="relative min-w-[120px]">
+              <div className="relative">
                 <select
                   value={selectedYear}
                   onChange={(e) => handleYearChange(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-4 pr-10 py-2.5 text-sm font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-3.5 pr-8 py-2 text-xs font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
                 >
                   {academicYears.map((yr) => (
                     <option key={yr} value={yr}>
@@ -890,7 +1096,7 @@ export default function CourseActivityHubView() {
                     </option>
                   ))}
                 </select>
-                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                     <path
                       fillRule="evenodd"
@@ -904,22 +1110,22 @@ export default function CourseActivityHubView() {
 
             {/* Branch */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">
-                Branch
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Branch / Dept.
               </label>
-              <div className="relative min-w-[180px]">
+              <div className="relative">
                 <select
                   value={selectedBranch}
                   onChange={(e) => handleBranchChange(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-4 pr-10 py-2.5 text-sm font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50 truncate"
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-3.5 pr-8 py-2 text-xs font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50 truncate"
                 >
-                  {branches.map((b) => (
+                  {branchesList.map((b) => (
                     <option key={b} value={b}>
                       {b}
                     </option>
                   ))}
                 </select>
-                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                     <path
                       fillRule="evenodd"
@@ -933,22 +1139,22 @@ export default function CourseActivityHubView() {
 
             {/* Semester */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
                 Semester
               </label>
-              <div className="relative min-w-[120px]">
+              <div className="relative">
                 <select
                   value={selectedSemester}
                   onChange={(e) => handleSemesterChange(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-4 pr-10 py-2.5 text-sm font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-3.5 pr-8 py-2 text-xs font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
                 >
-                  {semesters.map((sem) => (
+                  {semestersList.map((sem) => (
                     <option key={sem} value={sem}>
                       {sem}
                     </option>
                   ))}
                 </select>
-                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
+                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
                     <path
                       fillRule="evenodd"
@@ -960,35 +1166,173 @@ export default function CourseActivityHubView() {
               </div>
             </div>
 
-            {/* Course */}
+            {/* Course Name */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-black uppercase tracking-wider text-gray-400">
-                Course
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Course Name (Subject Title)
               </label>
-              <div className="relative min-w-[180px]">
-                <select
-                  value={selectedCourseCode}
-                  onChange={(e) => setSelectedCourseCode(e.target.value)}
-                  className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-4 pr-10 py-2.5 text-sm font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50 truncate"
-                >
-                  {courses.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} - {c.name}
-                    </option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-              </div>
+              <input
+                type="text"
+                placeholder="e.g. Applied Mathematics-I"
+                value={inputCourseName}
+                onChange={(e) => setInputCourseName(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-950 placeholder-gray-400 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+              />
+            </div>
+
+            {/* Course Code */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Course Code
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. COMP101"
+                value={inputCourseCode}
+                onChange={(e) => setInputCourseCode(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-950 placeholder-gray-400 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+              />
             </div>
           </div>
+
+          {/* Categorized Document Upload & Mapping Row */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end justify-between border-t border-red-50/50 pt-4 mt-1">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:items-center flex-1 gap-x-4">
+              
+              {/* Category Dropdown */}
+              <div className="flex flex-col gap-1 sm:min-w-[200px]">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                  <Icon name="grid" className="h-3.5 w-3.5 text-red-500" />
+                  <span>Document Category</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      setSelectedCategory(newCat);
+                      const types = categoryDocTypes[newCat] || [];
+                      if (types.length > 0) {
+                        setSelectedDocType(types[0]);
+                      }
+                    }}
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-3.5 pr-8 py-2 text-xs font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+                  >
+                    {Object.keys(categoryDocTypes).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {/* Document Type Dropdown */}
+              <div className="flex flex-col gap-1 sm:min-w-[200px]">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                  <Icon name="file" className="h-3.5 w-3.5 text-red-500" />
+                  <span>Document Type</span>
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedDocType}
+                    onChange={(e) => setSelectedDocType(e.target.value)}
+                    className="w-full appearance-none rounded-xl border border-gray-200 bg-white pl-3.5 pr-8 py-2 text-xs font-bold text-gray-950 outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50"
+                  >
+                    {(categoryDocTypes[selectedCategory] || []).map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              {/* File Upload Selector */}
+              <div className="flex flex-col gap-1 flex-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                  Select File (PDF / DOCX)
+                </label>
+                <div className="flex items-center gap-2.5">
+                  <input
+                    type="file"
+                    id="evidence-document-upload"
+                    accept=".pdf,.docx"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="evidence-document-upload"
+                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs font-bold text-gray-700 outline-none transition hover:border-red-200 hover:bg-red-50/5 cursor-pointer shadow-sm shrink-0"
+                  >
+                    <Icon name="upload" className="h-3.5 w-3.5 text-gray-400" />
+                    <span>Choose File</span>
+                  </label>
+                  {uploadedFile ? (
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 shadow-sm truncate max-w-[220px]">
+                      <span className="text-emerald-600 font-bold">✓</span>
+                      <span className="truncate font-bold" title={uploadedFile.name}>{uploadedFile.name}</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="ml-1 text-emerald-500 hover:text-emerald-700 font-extrabold focus:outline-none text-sm"
+                        title="Remove file"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <span className="text-xs font-bold text-gray-400 italic">No file selected</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 lg:mt-0">
+              <button
+                type="button"
+                onClick={handleSaveCourseMapping}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50 transition focus:outline-none focus:ring-4 focus:ring-slate-100"
+              >
+                <Icon name="edit" className="h-3.5 w-3.5 text-slate-500" />
+                <span>Save Target Only</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSaveEvidenceDocument}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4.5 py-2 text-xs font-black text-white shadow-md shadow-red-100/50 hover:bg-red-700 transition focus:outline-none focus:ring-4 focus:ring-red-100"
+              >
+                <Icon name="check" className="h-3.5 w-3.5" />
+                <span>Map & Upload Document</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Required Note */}
+          <p className="text-[10px] font-semibold text-gray-400 mt-0.5 flex items-center gap-1.5">
+            <Icon name="info" className="h-3.5 w-3.5 text-red-500 shrink-0" />
+            NBA Criterion 2.1 Compliance: Uploading syllabus evidence is mandatory for direct attainment audit.
+          </p>
         </div>
       </section>
 
@@ -996,50 +1340,76 @@ export default function CourseActivityHubView() {
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
         <SummaryCard label="Branches Taught" value={String(totalBranches)} icon="grid" color="text-red-600 bg-red-50" />
         <SummaryCard label="Subjects Taught" value={String(totalCourses)} icon="book" color="text-sky-600 bg-sky-50" />
-        <SummaryCard label="Total Activities" value={String(totalActivities)} icon="clipboard" color="text-emerald-600 bg-emerald-50" />
-        <SummaryCard label="Total Documents" value={String(totalDocuments)} icon="file" color="text-amber-600 bg-amber-50" />
-        <SummaryCard label="Total Assessments" value={String(totalAssessments)} icon="award" color="text-indigo-600 bg-indigo-50" />
-        <SummaryCard label="Total Workshops" value={String(totalWorkshops)} icon="education" color="text-violet-600 bg-violet-50" />
+        <SummaryCard label="Total Activities" value={String(totalItemsCount)} icon="clipboard" color="text-emerald-600 bg-emerald-50" />
+        <SummaryCard label="Teaching Docs" value={String(totalDocuments)} icon="file" color="text-amber-600 bg-amber-50" />
+        <SummaryCard label="Total Assessments" value={String(totalAssessmentsCount)} icon="award" color="text-indigo-600 bg-indigo-50" />
+        <SummaryCard label="Total Events" value={String(totalWorkshops)} icon="education" color="text-violet-600 bg-violet-50" />
       </div>
 
       {/* Subject Information Section */}
-      {currentCourse && (
-        <section className="rounded-3xl border border-red-100 bg-gradient-to-r from-red-700 to-rose-600 p-6 text-white shadow-[0_20px_50px_rgba(185,28,28,0.12)]">
+      {(activeCourseName || activeCourseCode) && (
+        <section className="rounded-3xl border border-red-100 bg-gradient-to-r from-red-700 to-rose-600 p-5 text-white shadow-[0_20px_50px_rgba(185,28,28,0.12)]">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="space-y-1">
               <span className="inline-block rounded-full bg-white/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white/95">
-                Currently Selected Course
+                Currently Audited Course
               </span>
-              <h3 className="text-2xl font-black tracking-tight mt-1">
-                {currentCourse.name}
+              <h3 className="text-xl font-black tracking-tight mt-1 flex flex-wrap items-center gap-2.5">
+                <span>{activeCourseName || "Unnamed Course"}</span>
+                {activeSyllabusDoc ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-black text-emerald-200 border border-emerald-500/30">
+                    ✓ Syllabus Mapped & Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-black text-amber-200 border border-amber-500/30">
+                    ⚠ Syllabus Evidence Required
+                  </span>
+                )}
               </h3>
-              <p className="text-sm font-semibold text-red-100">
-                Course Code: <span className="font-extrabold">{currentCourse.code}</span>
+              <p className="text-xs font-semibold text-red-100">
+                Course Code: <span className="font-extrabold">{activeCourseCode || "N/A"}</span>
               </p>
+
+              {activeSyllabusDoc && (
+                <div className="mt-2 text-xs font-bold text-red-150 flex items-center gap-1.5 bg-white/10 w-max px-3 py-1 rounded-lg">
+                  <Icon name="file" className="h-3.5 w-3.5 text-red-200" />
+                  <span>Mapped Syllabus: {activeSyllabusDoc.fileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleDeleteDocument(activeSyllabusDoc.documentId);
+                    }}
+                    className="ml-2 text-red-200 hover:text-white transition duration-200 font-extrabold focus:outline-none"
+                    title="Remove syllabus"
+                  >
+                    <Icon name="trash" className="h-3.5 w-3.5 inline" />
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-4 md:border-t-0 md:pt-0">
-              <div className="rounded-2xl bg-white/10 px-4 py-3 min-w-[120px] ring-1 ring-white/10">
+            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-3.5 md:border-t-0 md:pt-0">
+              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[120px] ring-1 ring-white/10">
                 <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
                   Branch
                 </p>
-                <p className="mt-0.5 text-sm font-black truncate max-w-[180px]" title={selectedBranch}>
+                <p className="mt-0.5 text-xs font-black truncate max-w-[180px]" title={selectedBranch}>
                   {selectedBranch}
                 </p>
               </div>
 
-              <div className="rounded-2xl bg-white/10 px-4 py-3 min-w-[100px] ring-1 ring-white/10">
+              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[100px] ring-1 ring-white/10">
                 <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
                   Academic Year
                 </p>
-                <p className="mt-0.5 text-sm font-black">{selectedYear}</p>
+                <p className="mt-0.5 text-xs font-black">{selectedYear}</p>
               </div>
 
-              <div className="rounded-2xl bg-white/10 px-4 py-3 min-w-[100px] ring-1 ring-white/10">
+              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[100px] ring-1 ring-white/10">
                 <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
                   Semester
                 </p>
-                <p className="mt-0.5 text-sm font-black">{selectedSemester}</p>
+                <p className="mt-0.5 text-xs font-black">{selectedSemester}</p>
               </div>
             </div>
           </div>
@@ -1047,84 +1417,103 @@ export default function CourseActivityHubView() {
       )}
 
       {/* Accordion Categories */}
-      <div className="space-y-4">
-        {currentCategories.map((cat) => {
-          const isExpanded = !!expandedSections[cat];
-          const filteredActivities = activities.filter((act) => act.category === cat);
-          
-          // Fallback icon mapping based on name keywords
-          const getIconForCategory = (catName: string) => {
-            if (catName.includes("Teaching") || catName.includes("Resources") || catName.includes("Guidelines")) return "book";
-            if (catName.includes("Assessments") || catName.includes("Exams") || catName.includes("Evaluation")) return "award";
-            if (catName.includes("Monitoring") || catName.includes("Attendance")) return "chart";
-            if (catName.includes("Outcomes") || catName.includes("Attainment")) return "spark";
-            return "file";
-          };
+      {(activeCourseName || activeCourseCode) && (
+        <div className="space-y-4">
+          {currentCategories.map((cat) => {
+            const isExpanded = !!expandedSections[cat];
+            
+            // Filter uploaded documents and mock activities by standard category
+            const groupUploadedDocs = portfolioDocuments.filter(
+              (doc) => doc.portfolioId === selectedMappingId && doc.category === cat
+            );
+            const groupMockActivities = activities.filter(
+              (act) => getStandardCategory(act.activityType) === cat
+            );
+            
+            const totalItemsInGroup = groupUploadedDocs.length + groupMockActivities.length;
 
-          const resolvedIcon = getIconForCategory(cat);
+            const getIconForCategory = (catName: string) => {
+              if (catName === "Teaching Documents") return "book";
+              if (catName === "Assessments") return "award";
+              if (catName === "Activities") return "clipboard";
+              if (catName === "Attendance") return "chart";
+              if (catName === "Accreditation Evidence") return "spark";
+              if (catName === "Events") return "education";
+              return "file";
+            };
 
-          return (
-            <div
-              key={cat}
-              className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-[0_10px_40px_rgba(127,29,29,0.04)]"
-            >
-              {/* Accordion Header */}
-              <button
-                type="button"
-                onClick={() => toggleSection(cat)}
-                className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-red-50/25"
+            const resolvedIcon = getIconForCategory(cat);
+
+            return (
+              <div
+                key={cat}
+                className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-[0_10px_40px_rgba(127,29,29,0.04)]"
               >
-                <div className="flex items-center gap-3">
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600`}>
-                    <Icon name={resolvedIcon} className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-base font-black tracking-tight text-gray-900">
-                      {cat}
-                    </h3>
-                    <p className="text-[11px] font-bold text-gray-400 mt-0.5">
-                      {filteredActivities.length} Evidence Documents Uploaded
-                    </p>
-                  </div>
-                </div>
-
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition-transform duration-300 ${
-                    isExpanded ? "rotate-180" : ""
-                  }`}
+                {/* Accordion Header */}
+                <button
+                  type="button"
+                  onClick={() => toggleSection(cat)}
+                  className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-red-50/25"
                 >
-                  <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </span>
-              </button>
-
-              {/* Accordion Content */}
-              {isExpanded && (
-                <div className="border-t border-red-100/50 bg-slate-50/20 px-6 py-6">
-                  {filteredActivities.length > 0 ? (
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {filteredActivities.map((act) => (
-                        <ActivityCard key={act.id} item={act} />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-red-150 bg-red-50/30 px-6 py-10 text-center">
-                      <p className="text-sm font-semibold text-gray-500">
-                        No uploaded activities or documents found in this category.
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+                      <Icon name={resolvedIcon} className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h3 className="text-base font-black tracking-tight text-gray-900">
+                        {cat}
+                      </h3>
+                      <p className="text-[11px] font-bold text-gray-400 mt-0.5">
+                        {totalItemsInGroup} Evidence Documents Uploaded
                       </p>
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                  </div>
+
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition-transform duration-300 ${
+                      isExpanded ? "rotate-180" : ""
+                    }`}
+                  >
+                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+                      <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                        clipRule="clipRule"
+                      />
+                    </svg>
+                  </span>
+                </button>
+
+                {/* Accordion Content */}
+                {isExpanded && (
+                  <div className="border-t border-red-100/50 bg-slate-50/20 px-6 py-6">
+                    {totalItemsInGroup > 0 ? (
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {groupUploadedDocs.map((doc) => (
+                          <DocumentCard
+                            key={doc.documentId}
+                            doc={doc}
+                            onDelete={handleDeleteDocument}
+                          />
+                        ))}
+                        {groupMockActivities.map((act) => (
+                          <ActivityCard key={act.id} item={act} />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-red-150 bg-red-50/30 px-6 py-10 text-center">
+                        <p className="text-sm font-semibold text-gray-500">
+                          No uploaded activities or documents found in this category.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -1142,7 +1531,7 @@ function SummaryCard({
   color: string;
 }) {
   return (
-    <div className="rounded-2xl border border-red-50 bg-white p-4.5 shadow-[0_12px_30px_rgba(127,29,29,0.03)] hover:shadow-md transition">
+    <div className="rounded-2xl border border-red-50 bg-white p-3.5 shadow-[0_12px_30px_rgba(127,29,29,0.03)] hover:shadow-md transition">
       <div className="flex items-center gap-3">
         <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${color}`}>
           <Icon name={icon} className="h-4.5 w-4.5" />
@@ -1211,3 +1600,70 @@ function ActivityCard({ item }: { item: ActivityItem }) {
     </div>
   );
 }
+
+// Document Card Component
+function DocumentCard({
+  doc,
+  onDelete
+}: {
+  doc: PortfolioDocument;
+  onDelete: (documentId: string) => void;
+}) {
+  const formattedDate = new Date(doc.uploadedAt).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric"
+  });
+
+  return (
+    <div className="flex flex-col justify-between rounded-2xl border border-emerald-200/80 bg-emerald-50/10 p-5 shadow-sm hover:border-emerald-300 hover:shadow-md transition duration-300">
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <span className="inline-block rounded-md bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-800">
+            {doc.documentType}
+          </span>
+          <span className="text-[10px] font-extrabold text-slate-400 whitespace-nowrap">
+            {formattedDate}
+          </span>
+        </div>
+
+        <h4 className="text-sm font-black text-slate-900 leading-snug truncate" title={doc.fileName}>
+          {doc.fileName}
+        </h4>
+
+        <p className="text-xs font-medium text-slate-500 leading-relaxed">
+          Uploaded by <span className="font-bold text-gray-700">{doc.uploadedBy}</span>. File size:{" "}
+          {doc.fileSize ? `${(doc.fileSize / 1024).toFixed(1)} KB` : "Unknown size"}.
+        </p>
+
+        <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 pt-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+          <span>Faculty Uploaded Evidence</span>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 border-t border-emerald-100 pt-3">
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            alert("Simulated view: opening " + doc.fileName);
+          }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-750 transition hover:bg-slate-50 cursor-pointer"
+        >
+          <Icon name="info" className="h-3.5 w-3.5 text-slate-500" />
+          View
+        </a>
+        <button
+          type="button"
+          onClick={() => onDelete(doc.documentId)}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 cursor-pointer"
+        >
+          <Icon name="trash" className="h-3.5 w-3.5 text-red-650" />
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
