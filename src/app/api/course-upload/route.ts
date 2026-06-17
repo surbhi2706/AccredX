@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
             const existingTabs = spreadsheetData.data.sheets?.map(s => s.properties?.title) || [];
             
             const expectedHeaders = [
-                "Timestamp", "Faculty Email", "Faculty Name", "Academic Year", 
+                "Record ID", "Timestamp", "Faculty Email", "Faculty Name", "Academic Year", 
                 "Branch", "Semester", "Course Name", "Course Code", "Document Category",
                 "Document Type", "Evidence File Name", "Drive File URL", 
                 "Drive File ID", "Metadata JSON"
@@ -191,6 +191,7 @@ export async function POST(req: NextRequest) {
             const facultyName = googleSession.user?.name || "Unknown Faculty";
             const facultyEmail = googleSession.user?.email || "unknown@example.com";
             const timestamp = new Date().toISOString();
+            const recordId = crypto.randomUUID();
 
             let parsedMetadata: Record<string, string> = {};
             try {
@@ -208,6 +209,7 @@ export async function POST(req: NextRequest) {
                 requestBody: {
                     values: [
                         [
+                            recordId,
                             timestamp,
                             facultyEmail,
                             facultyName,
