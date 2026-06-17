@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Icon from "@/components/Icon";
 
 export type ActivityItem = {
@@ -22,494 +22,7 @@ export type ActivityItem = {
 type Course = {
   code: string;
   name: string;
-  type: "theory" | "laboratory" | "project" | "seminar" | "projectwork";
 };
-
-const branchesList = [
-  "Computer Engineering (COMP)",
-  "Information Technology (IT)",
-  "Artificial Intelligence and Data Science (AIDS)",
-  "Electronics and Telecommunication Engineering (EXTC)",
-  "Electronics and Computer Engineering (EXCP)",
-  "Computer Science and Business Systems (CSBS)",
-  "Mechanical Engineering (MECH)",
-  "Computer and Communication Engineering (CCE)",
-  "Robotics and Artificial Intelligence (RAI)",
-  "VLSI Design and Technology (VLSI)"
-];
-
-const semestersList = [
-  "Semester 1",
-  "Semester 2",
-  "Semester 3",
-  "Semester 4",
-  "Semester 5",
-  "Semester 6",
-  "Semester 7",
-  "Semester 8"
-];
-
-
-// Generates high-fidelity realistic accreditation-compliant activity mock data based on Course Type selection
-function generateMockActivities(
-  academicYear: string,
-  branch: string,
-  semester: string,
-  course: Course
-): ActivityItem[] {
-  const baseYear = academicYear.split("-")[0] || "2025";
-  const yr = baseYear;
-  const activities: ActivityItem[] = [];
-
-  if (course.type === "theory") {
-    activities.push(
-      {
-        id: 1,
-        title: `Detailed Course Plan & Syllabus Mapping`,
-        date: `04 Jul ${yr}`,
-        description: `Accreditation-ready theory course blueprint for ${course.name} detailing syllabus split-up, references, and PO/CO mapping.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Teaching Documents",
-        activityType: "Course Plan",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 2,
-        title: `Lecture-by-Lecture Lesson Plan`,
-        date: `06 Jul ${yr}`,
-        description: `Standard lecture schedule listing pedagogical tools, resources, and actual delivery dates.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Teaching Documents",
-        activityType: "Lesson Plan",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 3,
-        title: `Comprehensive Lecture Notes (Unit 1 to 4)`,
-        date: `12 Aug ${yr}`,
-        description: `Detailed study notes covering core theoretical concepts, definitions, and numerical examples.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Teaching Documents",
-        activityType: "Lecture Notes",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 4,
-        title: `Visual Slides and Presentation Deck`,
-        date: `15 Aug ${yr}`,
-        description: `PowerPoint slide deck incorporating flowcharts and diagrams used during classroom sessions.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Teaching Documents",
-        activityType: "PPTs",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 5,
-        title: `Continuous Assessment Assignment Guidelines`,
-        date: `10 Sep ${yr}`,
-        description: `Problem statements for home assignments with evaluation rubrics and submission instructions.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Assessments & Homework",
-        activityType: "Assignments",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 6,
-        title: `Continuous Assessment Quiz Sheets & Answers`,
-        date: `25 Sep ${yr}`,
-        description: `Google Forms MCQ summaries and grade spreadsheets assessing continuous learning.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Assessments & Homework",
-        activityType: "Quizzes",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 7,
-        title: `Mid-Semester Examination Question Paper & Solutions`,
-        date: `15 Oct ${yr}`,
-        description: `Evaluated mid-sem exam paper along with evaluation schemes and answer keys.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Mid-Sem & End-Sem Exams",
-        activityType: "Mid-Sem Exams",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 8,
-        title: `End-Semester Examination Format and Sample Sheets`,
-        date: `30 Nov ${yr}`,
-        description: `University end-semester final exam papers, grading patterns, and moderator worksheets.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Mid-Sem & End-Sem Exams",
-        activityType: "End-Sem Exams",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 9,
-        title: `Daily Student Theory Attendance Register`,
-        date: `05 Dec ${yr}`,
-        description: `Monthly student attendance logs, warning letters for default, and remedial engagements.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Execution & Outlines",
-        activityType: "Attendance",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 10,
-        title: `Result Analysis and Performance Grade Curve`,
-        date: `20 Dec ${yr}`,
-        description: `Statistical breakdown of grades, passing percentage, and comparative analysis with previous batches.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Execution & Outlines",
-        activityType: "Result Analysis",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 11,
-        title: `Course Outcome (CO) Attainment calculations`,
-        date: `24 Dec ${yr}`,
-        description: `Excel sheets calculating direct attainment metrics from exam marks and indirect attainment from exit surveys.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Execution & Outlines",
-        activityType: "CO Attainment",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      }
-    );
-  } else if (course.type === "laboratory") {
-    activities.push(
-      {
-        id: 1,
-        title: `Laboratory Course Manual`,
-        date: `05 Jul ${yr}`,
-        description: `Comprehensive guide detailing setup instructions, objective mapping, and safety measures.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Lab Resources & Setup",
-        activityType: "Lab Manual",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 2,
-        title: `Syllabus Experiment List`,
-        date: `06 Jul ${yr}`,
-        description: `Detailed index of 10 core experiments mapped to individual learning goals.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Lab Resources & Setup",
-        activityType: "Experiment List",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 3,
-        title: `Practical Question Bank`,
-        date: `08 Sep ${yr}`,
-        description: `List of coding scenarios and system tasks compiled for final practical assessment tests.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Lab Resources & Setup",
-        activityType: "Practical Question Bank",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 4,
-        title: `Laboratory Session Attendance Register`,
-        date: `05 Dec ${yr}`,
-        description: `Official attendance tracker signed by faculty for weekly batch laboratory sessions.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Lab Attendance & Execution",
-        activityType: "Lab Attendance",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 5,
-        title: `Student Lab Submissions & Portfolios`,
-        date: `10 Nov ${yr}`,
-        description: `Repository of student evaluations, submitted source code, circuit files, and certified lab journals.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Lab Attendance & Execution",
-        activityType: "Student Submissions",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 6,
-        title: `Continuous Practical Assessment Records`,
-        date: `15 Nov ${yr}`,
-        description: `Evaluations of weekly experiment logs tracked using direct rubric marks.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Assessments & Evaluation",
-        activityType: "Practical Assessments",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 7,
-        title: `Practical Examination Marksheets`,
-        date: `02 Dec ${yr}`,
-        description: `Gradesheets signed by internal and external examiners for end-semester laboratory exams.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Assessments & Evaluation",
-        activityType: "Practical Examination Records",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 8,
-        title: `End-Sem Viva Voce Evaluation Records`,
-        date: `04 Dec ${yr}`,
-        description: `Summary sheets detailing viva outcomes and oral performance grades for the batch.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Assessments & Evaluation",
-        activityType: "Viva Records",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 9,
-        title: `Lab Course Outcome (CO) Attainment Calculations`,
-        date: `24 Dec ${yr}`,
-        description: `Excel sheets compiling indirect feedback and direct lab exam grades to map CO attainments.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Outcomes & Attainment",
-        activityType: "Lab CO Attainment",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      }
-    );
-  } else {
-    // Project Work / Mini Project / Seminar
-    activities.push(
-      {
-        id: 1,
-        title: `Course Guidelines & Assessment Rubrics`,
-        date: `08 Jul ${yr}`,
-        description: `Official handbook detailing project/seminar goals, format rules, review stages, and grading metrics.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Guidelines & Allocation",
-        activityType: "Guidelines and Assessment Rubrics",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 2,
-        title: `Student Group Allocation & Mentor Mappings`,
-        date: `15 Jul ${yr}`,
-        description: `Official lists showing mentor allocations, team structures, and roll numbers.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Guidelines & Allocation",
-        activityType: "Student Group Allocations",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 3,
-        title: `Problem Statement Approval Forms`,
-        date: `30 Jul ${yr}`,
-        description: `Forms detailing problem approvals, research gaps, HOD sign-offs, and literature survey references.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Guidelines & Allocation",
-        activityType: "Problem Statement Approval Forms",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 4,
-        title: `Weekly Progress Log Books`,
-        date: `01 Oct ${yr}`,
-        description: `Progress logs signed by internal guides detailing weekly accomplishments and blockers.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Progress Monitoring",
-        activityType: "Weekly Progress Logs",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 5,
-        title: `Synopsis & Mid-Term Review Evaluation Reports`,
-        date: `25 Oct ${yr}`,
-        description: `Mark sheets and feedback records compiled by the project review committee.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Progress Monitoring",
-        activityType: "Synopsis/Presentation Review Reports",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 6,
-        title: `Project Final Report & Thesis Document`,
-        date: `28 Nov ${yr}`,
-        description: `Soft copies of final student project reports containing implementation screenshots, code, and conclusions.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Evaluation Records",
-        activityType: "Project Report / Thesis Document",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 7,
-        title: `External Examiner Evaluation Sheets`,
-        date: `03 Dec ${yr}`,
-        description: `External mark sheets scoring presentation slides, project demos, and structural code quality.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Evaluation Records",
-        activityType: "External Examination Sheets",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 8,
-        title: `Viva Voce Evaluation Records`,
-        date: `04 Dec ${yr}`,
-        description: `Final oral evaluation logs with viva scores signed by external panels.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Evaluation Records",
-        activityType: "Viva Voce Evaluation Records",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      },
-      {
-        id: 9,
-        title: `Project CO/PO Attainment Sheets & Surveys`,
-        date: `24 Dec ${yr}`,
-        description: `Workbook maps, direct presentation scores, and exit surveys assessing project goals.`,
-        branch,
-        courseCode: course.code,
-        courseName: course.name,
-        academicYear,
-        semester,
-        category: "Outcomes & Attainments",
-        activityType: "Attainment calculations and Student feedback surveys",
-        viewUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
-        downloadUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf"
-      }
-    );
-  }
-
-  return activities;
-}
 
 export type CourseMapping = {
   id: string;
@@ -543,6 +56,7 @@ export type DocumentItem = {
   createdAt: string;
   resourceType?: "FILE" | "LINK";
   externalUrl?: string;
+  driveFileId?: string;
   description?: string;
 };
 
@@ -654,7 +168,25 @@ function getStandardCategory(activityType: string): string {
 }
 
 export default function CourseActivityHubView() {
-  const academicYears = ["2023-2024", "2024-2025", "2025-2026"];
+  const branchesList = [
+    "Computer Engineering (COMP)",
+    "Information Technology (IT)",
+    "Electronics and Telecommunication (EXTC)",
+    "Mechanical Engineering (MECH)",
+    "Civil Engineering (CIVIL)"
+  ];
+  
+  const academicYears = [
+    "2025-2026",
+    "2024-2025",
+    "2023-2024",
+    "2022-2023"
+  ];
+  
+  const semestersList = [
+    "Semester 1", "Semester 2", "Semester 3", "Semester 4", 
+    "Semester 5", "Semester 6", "Semester 7", "Semester 8"
+  ];
 
   const [selectedYear, setSelectedYear] = useState<string>("2025-2026");
   const [selectedBranch, setSelectedBranch] = useState<string>(branchesList[0]);
@@ -673,88 +205,91 @@ export default function CourseActivityHubView() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(true);
+
   // --- FACULTY COURSE OWNFLOW STATE ---
-  const [courseMappings, setCourseMappings] = useState<CourseMapping[]>([
-    {
-      id: "mapping-default-1",
-      academicYear: "2025-2026",
-      branch: "Computer Engineering (COMP)",
-      semester: "Semester 1",
-      courseCode: "COMP101",
-      courseName: "Applied Mathematics-I (Theory)",
-      syllabusFile: null,
-      uploadedBy: "Faculty Member",
-      uploadedAt: new Date().toISOString()
-    },
-    {
-      id: "mapping-default-2",
-      academicYear: "2025-2026",
-      branch: "Computer Engineering (COMP)",
-      semester: "Semester 3",
-      courseCode: "COMP301",
-      courseName: "Data Structures & Algorithms",
-      syllabusFile: null,
-      uploadedBy: "Faculty Member",
-      uploadedAt: new Date().toISOString()
-    }
-  ]);
+  const [courseMappings, setCourseMappings] = useState<CourseMapping[]>([]);
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [documentMappings, setDocumentMappings] = useState<DocumentMapping[]>([]);
 
-  const [documents, setDocuments] = useState<DocumentItem[]>([
-    {
-      id: "doc-default-1",
-      name: "Applied_Math_I_Syllabus.pdf",
-      fileSize: 154200,
-      uploadedBy: "Faculty Member",
-      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-      resourceType: "FILE"
-    },
-    {
-      id: "doc-default-2",
-      name: "Applied_Math_I_MidSem_QP.pdf",
-      fileSize: 112000,
-      uploadedBy: "Faculty Member",
-      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-      resourceType: "FILE"
-    },
-    {
-      id: "doc-default-3",
-      name: "Applied_Math_I_CO_PO_Attainment.xlsx",
-      fileSize: 45000,
-      uploadedBy: "Faculty Member",
-      createdAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-      resourceType: "FILE"
-    }
-  ]);
+  const fetchCourseActivities = async () => {
+    setIsLoadingData(true);
+    try {
+      const res = await fetch("/api/course-activities");
+      if (!res.ok) throw new Error("Failed to fetch data");
+      const data = await res.json();
+      
+      const newCourseMappings: CourseMapping[] = [];
+      const newDocuments: DocumentItem[] = [];
+      const newDocumentMappings: DocumentMapping[] = [];
 
-  const [documentMappings, setDocumentMappings] = useState<DocumentMapping[]>([
-    {
-      id: "map-default-1",
-      documentId: "doc-default-1",
-      portfolioId: "mapping-default-1",
-      category: "Teaching Documents",
-      documentType: "Syllabus",
-      mappedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-      isOriginal: true
-    },
-    {
-      id: "map-default-2",
-      documentId: "doc-default-2",
-      portfolioId: "mapping-default-1",
-      category: "Assessments",
-      documentType: "Mid Semester Exam",
-      mappedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-      isOriginal: true
-    },
-    {
-      id: "map-default-3",
-      documentId: "doc-default-3",
-      portfolioId: "mapping-default-1",
-      category: "Accreditation Evidence",
-      documentType: "CO-PO Attainment",
-      mappedAt: new Date(Date.now() - 86400000 * 1).toISOString(),
-      isOriginal: true
+      data.activities.forEach((activity: any) => {
+        // Find or create course mapping
+        let courseMapping = newCourseMappings.find(cm => 
+          cm.academicYear === activity.academicYear &&
+          cm.branch === activity.branch &&
+          cm.semester === activity.semester &&
+          cm.courseCode === activity.courseCode
+        );
+
+        if (!courseMapping) {
+          courseMapping = {
+            id: `course-${activity.courseCode}-${activity.semester}-${activity.branch}-${activity.academicYear}`.replace(/\s+/g, '-'),
+            academicYear: activity.academicYear,
+            branch: activity.branch,
+            semester: activity.semester,
+            courseCode: activity.courseCode,
+            courseName: activity.courseName,
+            syllabusFile: null,
+            uploadedBy: activity.facultyName || activity.facultyEmail,
+            uploadedAt: activity.timestamp
+          };
+          newCourseMappings.push(courseMapping);
+        }
+
+        // Add document
+        let metadata: any = {};
+        try { metadata = JSON.parse(activity.metadataJson || "{}"); } catch(e) {}
+        
+        const docId = `doc-${activity.recordId}`;
+        newDocuments.push({
+          id: docId,
+          name: activity.evidenceFileName || "Unknown Link/File",
+          fileSize: undefined,
+          uploadedBy: activity.facultyName || activity.facultyEmail,
+          createdAt: activity.timestamp,
+          resourceType: metadata.resourceType || (activity.driveFileUrl?.includes("drive.google.com") ? "FILE" : "LINK"),
+          externalUrl: activity.driveFileUrl,
+          driveFileId: activity.driveFileId,
+          description: metadata.description || ""
+        });
+
+        // Add document mapping
+        newDocumentMappings.push({
+          id: `map-${activity.recordId}`,
+          documentId: docId,
+          portfolioId: courseMapping.id,
+          category: activity.documentCategory,
+          documentType: activity.documentType,
+          mappedAt: activity.timestamp,
+          isOriginal: true,
+          recordId: activity.recordId // custom property to link back to Google Sheet row
+        } as any);
+      });
+
+      setCourseMappings(newCourseMappings);
+      setDocuments(newDocuments);
+      setDocumentMappings(newDocumentMappings);
+    } catch (err) {
+      console.error("Error fetching course activities:", err);
+    } finally {
+      setIsLoadingData(false);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchCourseActivities();
+  }, []);
 
   // Map To Modal State
   const [isMappingModalOpen, setIsMappingModalOpen] = useState<boolean>(false);
@@ -762,6 +297,12 @@ export default function CourseActivityHubView() {
   const [tempSelections, setTempSelections] = useState<Record<string, boolean>>({});
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [expandedCourses, setExpandedCourses] = useState<Record<string, boolean>>({});
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingMapping, setEditingMapping] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState<any>({});
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
 
   // Resource Type and Link States
   const [resourceType, setResourceType] = useState<"FILE" | "LINK">("FILE");
@@ -929,63 +470,8 @@ export default function CourseActivityHubView() {
         externalUrl = documentDriveUrl; 
       }
 
-      const now = new Date().toISOString();
-      const uploadedBy = "Faculty Member";
-
-      // 1. Find or create the CourseMapping portfolio
-      let activeMapping = courseMappings.find(m =>
-        m.academicYear === selectedYear &&
-        m.branch === selectedBranch &&
-        m.semester === selectedSemester &&
-        m.courseCode === courseCode
-      );
-
-      let mappingId = "";
-      if (activeMapping) {
-        mappingId = activeMapping.id;
-      } else {
-        // Create new mapping on the fly
-        const newMappingId = `mapping-${Date.now()}`;
-        const newMapping: CourseMapping = {
-          id: newMappingId,
-          academicYear: selectedYear,
-          branch: selectedBranch,
-          semester: selectedSemester,
-          courseCode,
-          courseName,
-          syllabusFile: null,
-          uploadedBy,
-          uploadedAt: now
-        };
-        setCourseMappings(prev => [...prev, newMapping]);
-        setSelectedMappingId(newMappingId);
-        mappingId = newMappingId;
-      }
-
-      const documentId = `doc-${Date.now()}`;
-      const newDoc: DocumentItem = {
-        id: documentId,
-        name,
-        fileSize,
-        uploadedBy,
-        createdAt: now,
-        resourceType,
-        externalUrl,
-        description
-      };
-
-      const newMapping: DocumentMapping = {
-        id: `map-${Date.now()}`,
-        documentId,
-        portfolioId: mappingId,
-        category: selectedCategory,
-        documentType: selectedDocType,
-        mappedAt: now,
-        isOriginal: true
-      };
-
-      setDocuments(prev => [...prev, newDoc]);
-      setDocumentMappings(prev => [...prev, newMapping]);
+      // Refresh state from Google Sheets
+      await fetchCourseActivities();
       
       // Reset Form States
       setUploadedFile(null);
@@ -1003,7 +489,62 @@ export default function CourseActivityHubView() {
   };
 
   const handleEditMapping = (id: string) => {
-    console.log("handleEditMapping invoked internally with ID:", id);
+    const mappingToEdit = documentMappings.find(m => m.id === id);
+    if (!mappingToEdit) return;
+    const recordId = (mappingToEdit as any).recordId;
+    if (!recordId) {
+      alert("This is a local mapping and cannot be edited via API. Refreshing the page.");
+      fetchCourseActivities();
+      return;
+    }
+    
+    // Find the original course mapping details
+    const courseDetails = courseMappings.find(c => c.id === mappingToEdit.portfolioId);
+    const docDetails = documents.find(d => d.id === mappingToEdit.documentId);
+    
+    setEditingMapping(mappingToEdit);
+    setEditFormData({
+      recordId: recordId,
+      academicYear: courseDetails?.academicYear || selectedYear,
+      branch: courseDetails?.branch || selectedBranch,
+      semester: courseDetails?.semester || selectedSemester,
+      courseName: courseDetails?.courseName || "",
+      courseCode: courseDetails?.courseCode || "",
+      documentCategory: mappingToEdit.category,
+      documentType: mappingToEdit.documentType,
+      description: docDetails?.description || ""
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    setIsSavingEdit(true);
+    try {
+      const res = await fetch("/api/course-activities", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editFormData)
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to update course activity");
+      }
+      
+      const result = await res.json();
+      if (result.fileMoved) {
+        alert("Metadata updated and file successfully moved to new folder hierarchy.");
+      } else {
+        alert("Metadata updated successfully.");
+      }
+      
+      setIsEditModalOpen(false);
+      await fetchCourseActivities();
+    } catch (err: unknown) {
+      console.error("Edit Error:", err);
+      alert(`Failed to update: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setIsSavingEdit(false);
+    }
   };
 
   const handleDeleteMapping = (id: string) => {
@@ -1020,25 +561,36 @@ export default function CourseActivityHubView() {
     }
   };
 
-  const handleDeleteDocumentMapping = (mappingId: string) => {
-    if (confirm("Are you sure you want to remove this evidence document reference?")) {
+  const handleDeleteDocumentMapping = async (mappingId: string) => {
+    if (confirm("Are you sure you want to delete this course activity? This action cannot be undone.")) {
       const mappingToDelete = documentMappings.find(m => m.id === mappingId);
       if (!mappingToDelete) return;
 
-      const documentId = mappingToDelete.documentId;
-      const newMappings = documentMappings.filter(m => m.id !== mappingId);
-      const remainingForDoc = newMappings.filter(m => m.documentId === documentId);
-
-      if (remainingForDoc.length === 0) {
-        // No mappings left, remove original document too
-        setDocuments(prev => prev.filter(d => d.id !== documentId));
-      } else if (mappingToDelete.isOriginal) {
-        // Promote the oldest remaining mapping to original
-        const oldest = remainingForDoc.sort((a, b) => new Date(a.mappedAt).getTime() - new Date(b.mappedAt).getTime())[0];
-        oldest.isOriginal = true;
+      const recordId = (mappingToDelete as any).recordId;
+      if (!recordId) {
+        alert("This is a local mapping and cannot be deleted via API. Refreshing the page.");
+        await fetchCourseActivities();
+        return;
       }
 
-      setDocumentMappings(newMappings);
+      setIsLoadingData(true);
+      try {
+        const res = await fetch(`/api/course-activities?id=${recordId}`, {
+          method: "DELETE"
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Deletion failed");
+        }
+
+        // Remove from UI immediately
+        await fetchCourseActivities();
+      } catch (error) {
+        console.error("Delete Error:", error);
+        alert(`Failed to delete: ${error instanceof Error ? error.message : "Unknown error"}`);
+        setIsLoadingData(false);
+      }
     }
   };
 
@@ -1202,35 +754,6 @@ export default function CourseActivityHubView() {
   const activeCourseName = inputCourseName.trim();
   const activeCourseCode = inputCourseCode.trim();
 
-  // Helper to resolve course type dynamically
-  const getCourseTypeFromName = (name: string): "theory" | "laboratory" | "project" | "seminar" | "projectwork" => {
-    const lowerName = name.toLowerCase();
-    if (lowerName.includes("laboratory") || lowerName.includes("lab") || lowerName.includes("practical")) {
-      return "laboratory";
-    }
-    if (lowerName.includes("capstone") || lowerName.includes("project work") || lowerName.includes("major project")) {
-      return "projectwork";
-    }
-    if (lowerName.includes("mini project") || lowerName.includes("project")) {
-      return "project";
-    }
-    if (lowerName.includes("seminar")) {
-      return "seminar";
-    }
-    return "theory";
-  };
-
-  const dynamicCourse: Course = {
-    code: activeCourseCode || "COURSE101",
-    name: activeCourseName || "Unnamed Course",
-    type: getCourseTypeFromName(activeCourseName)
-  };
-
-  // Generate activities for current selectors
-  const activities = (activeCourseName || activeCourseCode)
-    ? generateMockActivities(selectedYear, selectedBranch, selectedSemester, dynamicCourse)
-    : [];
-
   // 6 standard categories for NAAC/NBA auditing
   const standardAccordionCategories = [
     "Teaching Documents",
@@ -1268,7 +791,7 @@ export default function CourseActivityHubView() {
   const totalBranches = new Set(courseMappings.map((m) => m.branch)).size;
   const totalCourses = new Set(courseMappings.map((m) => m.courseCode)).size;
 
-  // Combined documents & activities in each category
+  // Combined documents in each category
   const activeMappings = documentMappings.filter(m => m.portfolioId === selectedMappingId);
   const activePortfolioDocs = activeMappings.map(m => {
     const doc = documents.find(d => d.id === m.documentId);
@@ -1285,19 +808,17 @@ export default function CourseActivityHubView() {
       isOriginal: m.isOriginal,
       resourceType: doc ? (doc.resourceType || "FILE") : "FILE",
       externalUrl: doc ? doc.externalUrl : undefined,
+      driveFileId: doc ? doc.driveFileId : undefined,
       description: doc ? doc.description : undefined
     };
   });
-  const totalItemsCount = activePortfolioDocs.length + activities.length;
+  const totalItemsCount = activePortfolioDocs.length;
 
-  const totalDocuments = activePortfolioDocs.filter(d => d.category === "Teaching Documents").length +
-    activities.filter(a => getStandardCategory(a.activityType) === "Teaching Documents").length;
+  const totalDocuments = activePortfolioDocs.filter(d => d.category === "Teaching Documents").length;
 
-  const totalAssessmentsCount = activePortfolioDocs.filter(d => d.category === "Assessments").length +
-    activities.filter(a => getStandardCategory(a.activityType) === "Assessments").length;
+  const totalAssessmentsCount = activePortfolioDocs.filter(d => d.category === "Assessments").length;
 
-  const totalWorkshops = activePortfolioDocs.filter(d => d.category === "Events").length +
-    activities.filter(a => getStandardCategory(a.activityType) === "Events").length;
+  const totalWorkshops = activePortfolioDocs.filter(d => d.category === "Events").length;
 
   return (
     <div className="space-y-4">
@@ -1687,23 +1208,35 @@ export default function CourseActivityHubView() {
               </div>
             </div>
           </div>
-
-          {/* Required Note */}
-          <p className="text-[10px] font-semibold text-gray-400 mt-0.5 flex items-center gap-1.5">
-            <Icon name="info" className="h-3.5 w-3.5 text-red-500 shrink-0" />
-            NBA Criterion 2.1 Compliance: Uploading syllabus evidence is mandatory for direct attainment audit.
-          </p>
         </div>
       </section>
 
-      {/* Summary Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-        <SummaryCard label="Branches Taught" value={String(totalBranches)} icon="grid" color="text-red-600 bg-red-50" />
-        <SummaryCard label="Subjects Taught" value={String(totalCourses)} icon="book" color="text-sky-600 bg-sky-50" />
-        <SummaryCard label="Total Activities" value={String(totalItemsCount)} icon="clipboard" color="text-emerald-600 bg-emerald-50" />
-        <SummaryCard label="Teaching Docs" value={String(totalDocuments)} icon="file" color="text-amber-600 bg-amber-50" />
-        <SummaryCard label="Total Assessments" value={String(totalAssessmentsCount)} icon="award" color="text-indigo-600 bg-indigo-50" />
-        <SummaryCard label="Total Events" value={String(totalWorkshops)} icon="education" color="text-violet-600 bg-violet-50" />
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-6">
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Total Branches</p>
+          <p className="text-lg font-black text-gray-900">{totalBranches}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Total Courses</p>
+          <p className="text-lg font-black text-gray-900">{totalCourses}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Total Items</p>
+          <p className="text-lg font-black text-gray-900">{totalItemsCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Teaching Docs</p>
+          <p className="text-lg font-black text-gray-900">{totalDocuments}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Assessments</p>
+          <p className="text-lg font-black text-gray-900">{totalAssessmentsCount}</p>
+        </div>
+        <div className="bg-white p-4 rounded-3xl border border-red-100 shadow-sm">
+          <p className="text-[9px] font-black uppercase text-gray-400">Events</p>
+          <p className="text-lg font-black text-gray-900">{totalWorkshops}</p>
+        </div>
       </div>
 
       {/* Subject Information Section */}
@@ -1729,48 +1262,6 @@ export default function CourseActivityHubView() {
               <p className="text-xs font-semibold text-red-100">
                 Course Code: <span className="font-extrabold">{activeCourseCode || "N/A"}</span>
               </p>
-
-              {activeSyllabusDoc && activeSyllabusMapping && (
-                <div className="mt-2 text-xs font-bold text-red-150 flex items-center gap-1.5 bg-white/10 w-max px-3 py-1 rounded-lg">
-                  <Icon name="file" className="h-3.5 w-3.5 text-red-200" />
-                  <span>Mapped Syllabus: {activeSyllabusDoc.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleDeleteDocumentMapping(activeSyllabusMapping.id);
-                    }}
-                    className="ml-2 text-red-200 hover:text-white transition duration-200 font-extrabold focus:outline-none"
-                    title="Remove syllabus"
-                  >
-                    <Icon name="trash" className="h-3.5 w-3.5 inline" />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-4 border-t border-white/10 pt-3.5 md:border-t-0 md:pt-0">
-              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[120px] ring-1 ring-white/10">
-                <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
-                  Branch
-                </p>
-                <p className="mt-0.5 text-xs font-black truncate max-w-[180px]" title={selectedBranch}>
-                  {selectedBranch}
-                </p>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[100px] ring-1 ring-white/10">
-                <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
-                  Academic Year
-                </p>
-                <p className="mt-0.5 text-xs font-black">{selectedYear}</p>
-              </div>
-
-              <div className="rounded-2xl bg-white/10 px-4 py-2 min-w-[100px] ring-1 ring-white/10">
-                <p className="text-[9px] font-black uppercase tracking-wider text-red-200">
-                  Semester
-                </p>
-                <p className="mt-0.5 text-xs font-black">{selectedSemester}</p>
-              </div>
             </div>
           </div>
         </section>
@@ -1779,7 +1270,6 @@ export default function CourseActivityHubView() {
       {/* Accordion Categories */}
       {(activeCourseName || activeCourseCode) && (
         <div className="space-y-4">
-          {/* Search Bar for Resources */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white border border-red-100 rounded-3xl p-4 shadow-[0_10px_40px_rgba(127,29,29,0.02)]">
             <div className="relative flex-1 max-w-md">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400 text-xs">
@@ -1787,111 +1277,37 @@ export default function CourseActivityHubView() {
               </span>
               <input
                 type="text"
-                placeholder="Search evidence resources (files, links, titles)..."
+                placeholder="Search evidence resources..."
                 value={resourceSearchQuery}
                 onChange={(e) => setResourceSearchQuery(e.target.value)}
                 className="w-full rounded-xl border border-gray-200 bg-white pl-10 pr-4 py-2 text-xs font-bold text-gray-950 outline-none transition focus:border-red-500 focus:ring-4 focus:ring-red-50"
               />
             </div>
-            {resourceSearchQuery && (
-              <button
-                type="button"
-                onClick={() => setResourceSearchQuery("")}
-                className="text-xs font-black text-red-600 hover:text-red-700 transition cursor-pointer"
-              >
-                Clear Search
-              </button>
-            )}
           </div>
 
           {currentCategories.map((cat) => {
             const isExpanded = !!expandedSections[cat];
             const q = resourceSearchQuery.toLowerCase().trim();
+            const groupUploadedDocs = activePortfolioDocs.filter((doc: any) => {
+              const categoryMatch = doc.category === cat;
+              if (!categoryMatch) return false;
+              if (!q) return true;
+              return doc.fileName?.toLowerCase().includes(q) || doc.description?.toLowerCase().includes(q);
+            });
             
-            // Filter uploaded documents and mock activities by standard category and search query
-            const groupUploadedDocs = activePortfolioDocs.filter(
-              (doc: any) => {
-                const categoryMatch = doc.category === cat;
-                if (!categoryMatch) return false;
-                if (!q) return true;
-                
-                const nameMatch = doc.fileName?.toLowerCase().includes(q);
-                const descMatch = doc.description?.toLowerCase().includes(q);
-                const extUrlMatch = doc.externalUrl?.toLowerCase().includes(q);
-                return nameMatch || descMatch || extUrlMatch;
-              }
-            );
-            
-            const groupMockActivities = activities.filter(
-              (act) => {
-                const categoryMatch = getStandardCategory(act.activityType) === cat;
-                if (!categoryMatch) return false;
-                if (!q) return true;
-                
-                const titleMatch = act.title?.toLowerCase().includes(q);
-                const descMatch = act.description?.toLowerCase().includes(q);
-                return titleMatch || descMatch;
-              }
-            );
-            
-            const totalItemsInGroup = groupUploadedDocs.length + groupMockActivities.length;
-
-            const getIconForCategory = (catName: string) => {
-              if (catName === "Teaching Documents") return "book";
-              if (catName === "Assessments") return "award";
-              if (catName === "Activities") return "clipboard";
-              if (catName === "Attendance") return "chart";
-              if (catName === "Accreditation Evidence") return "spark";
-              if (catName === "Events") return "education";
-              return "file";
-            };
-
-            const resolvedIcon = getIconForCategory(cat);
-
             return (
-              <div
-                key={cat}
-                className="overflow-hidden rounded-3xl border border-red-100 bg-white shadow-[0_10px_40px_rgba(127,29,29,0.04)]"
-              >
-                {/* Accordion Header */}
+              <div key={cat} className="overflow-hidden rounded-3xl border border-red-100 bg-white">
                 <button
                   type="button"
                   onClick={() => toggleSection(cat)}
-                  className="flex w-full items-center justify-between px-6 py-5 text-left transition hover:bg-red-50/25"
+                  className="flex w-full items-center justify-between px-6 py-5 text-left hover:bg-red-50/25"
                 >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                      <Icon name={resolvedIcon} className="h-5 w-5" />
-                    </span>
-                    <div>
-                      <h3 className="text-base font-black tracking-tight text-gray-900">
-                        {cat}
-                      </h3>
-                      <p className="text-[11px] font-bold text-gray-400 mt-0.5">
-                        {totalItemsInGroup} {resourceSearchQuery ? "Matching" : "Evidence"} Documents
-                      </p>
-                    </div>
-                  </div>
-
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 text-slate-500 transition-transform duration-300 ${
-                      isExpanded ? "rotate-180" : ""
-                    }`}
-                  >
-                    <svg viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
-                      <path
-                        fillRule="evenodd"
-                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </span>
+                  <h3 className="text-base font-black text-gray-900">{cat}</h3>
+                  <span className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>▼</span>
                 </button>
-
-                {/* Accordion Content */}
                 {isExpanded && (
-                  <div className="border-t border-red-100/50 bg-slate-50/20 px-6 py-6">
-                    {totalItemsInGroup > 0 ? (
+                  <div className="border-t border-red-100/50 px-6 py-6">
+                    {groupUploadedDocs.length > 0 ? (
                       <div className="grid gap-4 md:grid-cols-2">
                         {groupUploadedDocs.map((doc: any) => (
                           <DocumentCard
@@ -1899,6 +1315,7 @@ export default function CourseActivityHubView() {
                             doc={doc}
                             onDelete={handleDeleteDocumentMapping}
                             onMapTo={handleOpenMapToModal}
+                            onEdit={handleEditMapping}
                             allMappings={documentMappings
                               .filter(m => m.documentId === doc.documentId)
                               .map(m => {
@@ -1909,20 +1326,14 @@ export default function CourseActivityHubView() {
                                   category: m.category,
                                   documentType: m.documentType
                                 };
-                              })
-                            }
+                              })}
                           />
-                        ))}
-                        {groupMockActivities.map((act) => (
-                          <ActivityCard key={act.id} item={act} />
                         ))}
                       </div>
                     ) : (
                       <div className="rounded-2xl border border-dashed border-red-150 bg-red-50/30 px-6 py-10 text-center">
-                        <p className="text-sm font-semibold text-gray-500">
-                          {resourceSearchQuery 
-                            ? "No matching evidence resources or activities found." 
-                            : "No uploaded activities or documents found in this category."}
+                        <p className="mt-2 text-xs font-bold text-slate-400">
+                          {resourceSearchQuery ? "No matching evidence resources found." : "No uploaded documents found in this category."}
                         </p>
                       </div>
                     )}
@@ -2121,6 +1532,170 @@ export default function CourseActivityHubView() {
           </div>
         </div>
       )}
+
+      {/* Edit Metadata Modal */}
+      {isEditModalOpen && editingMapping && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm transition-all duration-300">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-2xl ring-1 ring-slate-900/5">
+            {/* Header */}
+            <div className="border-b border-slate-100 bg-gradient-to-r from-slate-800 to-slate-700 px-6 py-5 text-white">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+                    Document Action
+                  </p>
+                  <h3 className="mt-1 text-lg font-black tracking-tight">
+                    Edit Document Metadata
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="rounded-xl bg-white/10 p-2 text-slate-200 hover:bg-white/20 transition cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Form Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Academic Year */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Academic Year
+                  </label>
+                  <select
+                    value={editFormData.academicYear}
+                    onChange={(e) => setEditFormData({ ...editFormData, academicYear: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  >
+                    {academicYears.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Semester */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Semester
+                  </label>
+                  <select
+                    value={editFormData.semester}
+                    onChange={(e) => setEditFormData({ ...editFormData, semester: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  >
+                    {semestersList.map(sem => (
+                      <option key={sem} value={sem}>{sem}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Branch */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Branch / Department
+                  </label>
+                  <select
+                    value={editFormData.branch}
+                    onChange={(e) => setEditFormData({ ...editFormData, branch: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  >
+                    {branchesList.map(branch => (
+                      <option key={branch} value={branch}>{branch}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Course Name */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Course Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.courseName}
+                    onChange={(e) => setEditFormData({ ...editFormData, courseName: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  />
+                </div>
+                {/* Course Code */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Course Code
+                  </label>
+                  <input
+                    type="text"
+                    value={editFormData.courseCode}
+                    onChange={(e) => setEditFormData({ ...editFormData, courseCode: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  />
+                </div>
+                {/* Document Category */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Document Category
+                  </label>
+                  <select
+                    value={editFormData.documentCategory}
+                    onChange={(e) => setEditFormData({ ...editFormData, documentCategory: e.target.value, documentType: categoryDocTypes[e.target.value][0] })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  >
+                    {Object.keys(categoryDocTypes).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Document Type */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Document Type
+                  </label>
+                  <select
+                    value={editFormData.documentType}
+                    onChange={(e) => setEditFormData({ ...editFormData, documentType: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                  >
+                    {categoryDocTypes[editFormData.documentCategory]?.map((doc: string) => (
+                      <option key={doc} value={doc}>{doc}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-1.5 ml-1">
+                    Description / Remarks
+                  </label>
+                  <textarea
+                    value={editFormData.description}
+                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-xs font-bold text-slate-700 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50"
+                    rows={2}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-black text-slate-705 hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={isSavingEdit}
+                className="rounded-xl bg-red-600 px-5 py-2.5 text-xs font-black text-white shadow-md shadow-red-100 hover:bg-red-700 transition cursor-pointer disabled:opacity-50"
+              >
+                {isSavingEdit ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2155,69 +1730,17 @@ function SummaryCard({
 }
 
 // Activity Card Component
-function ActivityCard({ item }: { item: ActivityItem }) {
-  return (
-    <div className="flex flex-col justify-between rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm hover:border-red-200 hover:shadow-md transition duration-300">
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-700">
-            {item.activityType}
-          </span>
-          <span className="text-[10px] font-extrabold text-slate-400 whitespace-nowrap">
-            {item.date}
-          </span>
-        </div>
-
-        <h4 className="text-sm font-black text-slate-900 leading-snug">
-          {item.title}
-        </h4>
-
-        <p className="text-xs font-medium text-slate-500 leading-relaxed">
-          {item.description}
-        </p>
-
-        <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-450 pt-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
-          <span className="truncate" title={`${item.branch} • ${item.courseCode}`}>
-            {item.branch} • {item.courseCode} - {item.courseName}
-          </span>
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
-        <a
-          href={item.viewUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
-        >
-          <Icon name="info" className="h-3.5 w-3.5 text-slate-500" />
-          View
-        </a>
-        <a
-          href={item.downloadUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-xs font-black text-red-700 transition hover:bg-red-100/70 cursor-pointer"
-        >
-          <Icon name="upload" className="h-3.5 w-3.5" />
-          Download
-        </a>
-      </div>
-    </div>
-  );
-}
-
-// Document Card Component
 function DocumentCard({
   doc,
   onDelete,
   onMapTo,
+  onEdit,
   allMappings
 }: {
   doc: any;
   onDelete: (mappingId: string) => void;
   onMapTo: (doc: any) => void;
+  onEdit: (mappingId: string) => void;
   allMappings: Array<{ courseName: string; courseCode: string; category: string; documentType: string }>;
 }) {
   const formattedDate = new Date(doc.uploadedAt).toLocaleDateString("en-IN", {
@@ -2319,28 +1842,56 @@ function DocumentCard({
           </a>
         ) : (
           <>
-            <a
-              href="#"
+            <div className="flex gap-2 flex-1">
+              <button
+                type="button"
+                onClick={() => onEdit(doc.mappingId)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
+              >
+                <Icon name="edit" className="h-3.5 w-3.5 text-slate-500" />
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete(doc.mappingId)}
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 cursor-pointer"
+              >
+                <Icon name="trash" className="h-3.5 w-3.5" />
+                Delete
+              </button>
+            </div>
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
-                alert("Simulated view: opening " + doc.fileName);
+                if (doc.externalUrl) {
+                  window.open(doc.externalUrl, '_blank');
+                } else if (doc.driveFileId) {
+                  window.open(`https://drive.google.com/file/d/${doc.driveFileId}/view`, '_blank');
+                } else {
+                  alert("Error: Google Drive metadata is missing for this file.");
+                }
               }}
               className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer text-center"
             >
               <Icon name="info" className="h-3.5 w-3.5 text-slate-500" />
               View
-            </a>
-            <a
-              href="#"
+            </button>
+            <button
+              type="button"
               onClick={(e) => {
                 e.preventDefault();
-                alert("Simulated download: downloading " + doc.fileName);
+                if (doc.driveFileId) {
+                  window.open(`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`, '_blank');
+                } else {
+                  alert("Error: Google Drive File ID is missing for this file.");
+                }
               }}
               className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100 cursor-pointer text-center"
             >
               <Icon name="upload" className="h-3.5 w-3.5 text-emerald-600 rotate-180" />
               Download
-            </a>
+            </button>
           </>
         )}
         <button
