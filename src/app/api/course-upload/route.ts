@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { drive_v3, google } from "googleapis";
+import { drive_v3, google, sheets_v4 } from "googleapis";
 import fs from "fs";
 import path from "path";
 import os from "os";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-
-
 import { getErrorStatus, getErrorMessage, getOrCreateFolder, getRepositoryFolder } from "@/lib/driveHelpers";
 
 export async function POST(req: NextRequest) {
@@ -15,15 +13,19 @@ export async function POST(req: NextRequest) {
 
         const file = formData.get("file") as File;
         const academicYear = (formData.get("academicYear") as string)?.trim() || "";
-        const pmsCategory = (formData.get("pmsCategory") as string)?.trim() || "";
-        const activityType = (formData.get("activityType") as string)?.trim() || "";
+        const branch = (formData.get("branch") as string)?.trim() || "";
+        const semester = (formData.get("semester") as string)?.trim() || "";
+        const courseName = (formData.get("courseName") as string)?.trim() || "";
+        const courseCode = (formData.get("courseCode") as string)?.trim() || "";
+        const documentCategory = (formData.get("documentCategory") as string)?.trim() || "";
+        const documentType = (formData.get("documentType") as string)?.trim() || "";
         const metadata = (formData.get("metadata") as string)?.trim() || "{}";
 
         if (!file) {
-            return NextResponse.json(
-                { error: "No file uploaded" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        }
+        if (!academicYear || !branch || !semester || !courseName || !courseCode || !documentCategory || !documentType) {
+            return NextResponse.json({ error: "Missing required course activity folder metadata" }, { status: 400 });
         }
 
         const session = await getServerSession(authOptions);
@@ -46,27 +48,26 @@ export async function POST(req: NextRequest) {
 
         auth.setCredentials({ access_token: googleSession.accessToken });
 
-        const drive = google.drive({
-            version: "v3",
-            auth,
-        });
-
-        const sheets = google.sheets({
-            version: "v4",
-            auth,
-        });
+        const drive = google.drive({ version: "v3", auth });
+        const sheets = google.sheets({ version: "v4", auth });
 
         let finalFolderId = null;
         let repositoryFolderId = "";
         let repositoryWarning = "";
 
+        // 1. Create Nested Folder Structure
         try {
             const repositoryFolder = await getRepositoryFolder(drive);
             repositoryFolderId = repositoryFolder.id;
             repositoryWarning = repositoryFolder.warning;
-            const yearFolderId = academicYear ? await getOrCreateFolder(drive, academicYear, repositoryFolderId) : repositoryFolderId;
-            const categoryFolderId = pmsCategory ? await getOrCreateFolder(drive, pmsCategory, yearFolderId) : yearFolderId;
-            finalFolderId = activityType ? await getOrCreateFolder(drive, activityType, categoryFolderId) : categoryFolderId;
+
+            const courseActivityRootId = await getOrCreateFolder(drive, "Course Activity", repositoryFolderId);
+            const yearFolderId = await getOrCreateFolder(drive, academicYear, courseActivityRootId);
+            const branchFolderId = await getOrCreateFolder(drive, branch, yearFolderId);
+            const semesterFolderId = await getOrCreateFolder(drive, semester, branchFolderId);
+            const courseFolderId = await getOrCreateFolder(drive, `${courseCode} - ${courseName}`, semesterFolderId);
+            const categoryFolderId = await getOrCreateFolder(drive, documentCategory, courseFolderId);
+            finalFolderId = await getOrCreateFolder(drive, documentType, categoryFolderId);
         } catch (folderError: unknown) {
             console.error("Error creating folder structure:", folderError);
             const status = getErrorStatus(folderError);
@@ -91,6 +92,7 @@ export async function POST(req: NextRequest) {
             throw new Error(getErrorMessage(folderError, "Failed to create folder structure in Google Drive."));
         }
 
+        // 2. Upload File to Drive
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
         const tempPath = path.join(os.tmpdir(), `${Date.now()}-${file.name}`);
@@ -114,11 +116,12 @@ export async function POST(req: NextRequest) {
         let sheetsSuccess = false;
         let sheetsErrorMsg = "";
 
-        // Handle Google Sheets
+        // 3. Handle Google Sheets Metadata Update
         try {
             const sheetName = "AccredX Activities";
-
-            // Keep the activity index beside the academic-year folders.
+            const targetTabName = "Course Activities";
+            
+            // Search for existing AccredX Activities spreadsheet
             const sheetSearch = await drive.files.list({
                 q: `mimeType='application/vnd.google-apps.spreadsheet' and name='${sheetName}' and '${repositoryFolderId}' in parents and trashed=false`,
                 fields: "files(id, name)",
@@ -132,7 +135,7 @@ export async function POST(req: NextRequest) {
             if (sheetSearch.data.files && sheetSearch.data.files.length > 0) {
                 spreadsheetId = sheetSearch.data.files[0].id as string;
             } else {
-                // Create new spreadsheet
+                // Create new spreadsheet if not exists
                 const sheetCreate = await drive.files.create({
                     requestBody: {
                         name: sheetName,
@@ -143,6 +146,44 @@ export async function POST(req: NextRequest) {
                     supportsAllDrives: true,
                 });
                 spreadsheetId = sheetCreate.data.id as string;
+            }
+
+            // Ensure "Course Activities" tab exists
+            const spreadsheetData = await sheets.spreadsheets.get({
+                spreadsheetId,
+                fields: "sheets.properties.title"
+            });
+            const existingTabs = spreadsheetData.data.sheets?.map(s => s.properties?.title) || [];
+            
+            const expectedHeaders = [
+                "Timestamp", "Faculty Email", "Faculty Name", "Academic Year", 
+                "Branch", "Semester", "Course Name", "Course Code", "Document Category",
+                "Document Type", "Evidence File Name", "Drive File URL", 
+                "Drive File ID", "Metadata JSON"
+            ];
+
+            if (!existingTabs.includes(targetTabName)) {
+                await sheets.spreadsheets.batchUpdate({
+                    spreadsheetId,
+                    requestBody: {
+                        requests: [{
+                            addSheet: {
+                                properties: {
+                                    title: targetTabName
+                                }
+                            }
+                        }]
+                    }
+                });
+                // Initialize headers
+                await sheets.spreadsheets.values.update({
+                    spreadsheetId,
+                    range: `${targetTabName}!A1:Z1`,
+                    valueInputOption: "USER_ENTERED",
+                    requestBody: {
+                        values: [expectedHeaders]
+                    }
+                });
             }
 
             const driveFileId = response.data.id;
@@ -158,42 +199,10 @@ export async function POST(req: NextRequest) {
                 console.error("Failed to parse metadata", e);
             }
 
-            const extractField = (keys: string[]) => {
-                for (const key of keys) {
-                    if (parsedMetadata[key]) return parsedMetadata[key];
-                }
-                return "";
-            };
-
-            const mappedTitle = extractField(["title", "paperTitle", "courseName", "projectTitle", "seminarTitle", "workshopTitle", "eventName", "activityTitle", "hackathonName", "bookTitle", "chapterTitle", "patentTitle", "workTitle", "subjectName", "materialTitle", "contentTitle", "methodName", "practiceTitle", "bosTitle", "trackName", "sessionTitle", "programName", "departmentName", "committeeName", "organizationName", "instituteOrganization", "lectureTitle", "awardTitle"]);
-            const mappedRole = extractField(["role", "roleDetails", "piDetails", "coordinationDetails", "roleInEvent", "bosMembership", "iqacRole", "roleName"]);
-            const mappedLevel = extractField(["quartile", "indexing", "level", "journalList", "indexingType", "studentEngagement"]);
-            const mappedDuration = extractField(["duration", "dates", "date", "sessionsEngaged", "implementationYear", "year", "academicYear", "semester", "publicationYear", "startYear"]);
-            const mappedOutcome = extractField(["outcomes", "learningOutcomes", "achievements", "expectedOutcome", "projectOutcomes", "skillsDeveloped"]);
-            const mappedDescription = extractField(["description", "practiceDescription", "projectDescription", "scope", "details", "contribution", "deliverables", "activitySupported"]);
-            const mappedRemarks = extractField(["remarks", "feedbackProvided", "analysis", "suggestedImprovements"]);
-
-            const expectedHeaders = [
-                "Timestamp", "Faculty Email", "Faculty Name", "Academic Year",
-                "PMS Category", "Activity Type", "Title", "Role", "Level",
-                "Duration", "Outcome", "Evidence File Name", "Drive File URL",
-                "Drive File ID", "Description", "Remarks", "PMS Section",
-                "Metadata JSON"
-            ];
-
-            await sheets.spreadsheets.values.update({
-                spreadsheetId,
-                range: "Sheet1!A1:R1",
-                valueInputOption: "USER_ENTERED",
-                requestBody: {
-                    values: [expectedHeaders]
-                }
-            });
-
             // Append Data
             await sheets.spreadsheets.values.append({
                 spreadsheetId,
-                range: "Sheet1!A:R",
+                range: `${targetTabName}!A:Z`,
                 valueInputOption: "USER_ENTERED",
                 insertDataOption: "INSERT_ROWS",
                 requestBody: {
@@ -203,19 +212,15 @@ export async function POST(req: NextRequest) {
                             facultyEmail,
                             facultyName,
                             academicYear,
-                            pmsCategory,
-                            activityType,
-                            mappedTitle,
-                            mappedRole,
-                            mappedLevel,
-                            mappedDuration,
-                            mappedOutcome,
+                            branch,
+                            semester,
+                            courseName,
+                            courseCode,
+                            documentCategory,
+                            documentType,
                             file.name,
                             driveFileUrl,
                             driveFileId,
-                            mappedDescription,
-                            mappedRemarks,
-                            parsedMetadata.pmsSection || "",
                             JSON.stringify(parsedMetadata)
                         ]
                     ]
@@ -226,10 +231,10 @@ export async function POST(req: NextRequest) {
 
         } catch (sheetError: unknown) {
             console.error("Error updating Google Sheets:", sheetError);
-            sheetsErrorMsg = getErrorMessage(sheetError, "Unknown error");
+            sheetsErrorMsg = getErrorMessage(sheetError, "Unknown error updating Course Activities spreadsheet");
         }
 
-        console.log("Upload successful");
+        console.log("Course Activity Upload successful to folder:", finalFolderId);
 
         return NextResponse.json({
             success: true,
@@ -241,11 +246,11 @@ export async function POST(req: NextRequest) {
             sheetsError: sheetsErrorMsg
         });
     } catch (error: unknown) {
-        console.error("Error during file upload:", error);
+        console.error("Error during course activity upload:", error);
 
         return NextResponse.json(
-            {
-                error: "Upload failed",
+            { 
+                error: "Course Activity Upload failed", 
                 details: getErrorMessage(error, "Unknown error")
             },
             { status: 500 }

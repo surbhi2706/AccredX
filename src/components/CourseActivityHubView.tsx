@@ -670,7 +670,8 @@ export default function CourseActivityHubView() {
   // Linked Category and Document Type state variables for staging
   const [selectedCategory, setSelectedCategory] = useState<string>("Teaching Documents");
   const [selectedDocType, setSelectedDocType] = useState<string>("Syllabus");
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; size?: number; type?: string } | null>(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
 
   // --- FACULTY COURSE OWNFLOW STATE ---
   const [courseMappings, setCourseMappings] = useState<CourseMapping[]>([
@@ -772,11 +773,7 @@ export default function CourseActivityHubView() {
   // --- HANDLERS ---
   const handleUploadSyllabus = (file: File) => {
     console.log("handleUploadSyllabus invoked with file:", file.name, file.size);
-    setUploadedFile({
-      name: file.name,
-      size: file.size,
-      type: file.type
-    });
+    setUploadedFile(file);
   };
 
   const handleSaveCourseMapping = () => {
@@ -832,7 +829,7 @@ export default function CourseActivityHubView() {
     }
   };
 
-  const handleSaveEvidenceDocument = () => {
+  const handleSaveEvidenceDocument = async () => {
     console.log("handleSaveEvidenceDocument invoked");
     const courseName = inputCourseName.trim();
     const courseCode = inputCourseCode.trim();
@@ -887,71 +884,122 @@ export default function CourseActivityHubView() {
       }
     }
 
-    const now = new Date().toISOString();
-    const uploadedBy = "Faculty Member";
+    setIsUploading(true);
 
-    // 1. Find or create the CourseMapping portfolio
-    let activeMapping = courseMappings.find(m =>
-      m.academicYear === selectedYear &&
-      m.branch === selectedBranch &&
-      m.semester === selectedSemester &&
-      m.courseCode === courseCode
-    );
+    try {
+      let documentDriveUrl = externalUrl;
+      
+      // Upload to Google Drive if it's a file
+      if (resourceType === "FILE" && uploadedFile) {
+        const formData = new FormData();
+        formData.append("file", uploadedFile);
+        formData.append("academicYear", selectedYear);
+        formData.append("branch", selectedBranch);
+        formData.append("semester", selectedSemester);
+        formData.append("courseName", courseName);
+        formData.append("courseCode", courseCode);
+        formData.append("documentCategory", selectedCategory);
+        formData.append("documentType", selectedDocType);
+        
+        const metadataObj = {
+          description: description || "",
+          resourceType
+        };
+        formData.append("metadata", JSON.stringify(metadataObj));
 
-    let mappingId = "";
-    if (activeMapping) {
-      mappingId = activeMapping.id;
-    } else {
-      // Create new mapping on the fly
-      const newMappingId = `mapping-${Date.now()}`;
-      const newMapping: CourseMapping = {
-        id: newMappingId,
-        academicYear: selectedYear,
-        branch: selectedBranch,
-        semester: selectedSemester,
-        courseCode,
-        courseName,
-        syllabusFile: null,
+        const res = await fetch("/api/course-upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.details || errData.error || "Course activity upload failed");
+        }
+
+        const uploadResult = await res.json();
+        
+        if (uploadResult.sheetsSuccess === false) {
+          console.warn("Google Sheets update issue:", uploadResult.sheetsError);
+        }
+        
+        // Use the returned URL for local state if needed (or just use default)
+        // Note: the backend actually returns the fileId, we can build the URL
+        documentDriveUrl = `https://drive.google.com/file/d/${uploadResult.fileId}/view`;
+        externalUrl = documentDriveUrl; 
+      }
+
+      const now = new Date().toISOString();
+      const uploadedBy = "Faculty Member";
+
+      // 1. Find or create the CourseMapping portfolio
+      let activeMapping = courseMappings.find(m =>
+        m.academicYear === selectedYear &&
+        m.branch === selectedBranch &&
+        m.semester === selectedSemester &&
+        m.courseCode === courseCode
+      );
+
+      let mappingId = "";
+      if (activeMapping) {
+        mappingId = activeMapping.id;
+      } else {
+        // Create new mapping on the fly
+        const newMappingId = `mapping-${Date.now()}`;
+        const newMapping: CourseMapping = {
+          id: newMappingId,
+          academicYear: selectedYear,
+          branch: selectedBranch,
+          semester: selectedSemester,
+          courseCode,
+          courseName,
+          syllabusFile: null,
+          uploadedBy,
+          uploadedAt: now
+        };
+        setCourseMappings(prev => [...prev, newMapping]);
+        setSelectedMappingId(newMappingId);
+        mappingId = newMappingId;
+      }
+
+      const documentId = `doc-${Date.now()}`;
+      const newDoc: DocumentItem = {
+        id: documentId,
+        name,
+        fileSize,
         uploadedBy,
-        uploadedAt: now
+        createdAt: now,
+        resourceType,
+        externalUrl,
+        description
       };
-      setCourseMappings(prev => [...prev, newMapping]);
-      setSelectedMappingId(newMappingId);
-      mappingId = newMappingId;
+
+      const newMapping: DocumentMapping = {
+        id: `map-${Date.now()}`,
+        documentId,
+        portfolioId: mappingId,
+        category: selectedCategory,
+        documentType: selectedDocType,
+        mappedAt: now,
+        isOriginal: true
+      };
+
+      setDocuments(prev => [...prev, newDoc]);
+      setDocumentMappings(prev => [...prev, newMapping]);
+      
+      // Reset Form States
+      setUploadedFile(null);
+      setLinkTitle("");
+      setLinkUrl("");
+      setLinkDescription("");
+
+      alert(`Evidence ${resourceType === "LINK" ? "link" : "document"} [${selectedDocType}] successfully uploaded and added to portfolio!`);
+    } catch (err: unknown) {
+      console.error("Upload Error:", err);
+      alert(`Failed to upload: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setIsUploading(false);
     }
-
-    const documentId = `doc-${Date.now()}`;
-    const newDoc: DocumentItem = {
-      id: documentId,
-      name,
-      fileSize,
-      uploadedBy,
-      createdAt: now,
-      resourceType,
-      externalUrl,
-      description
-    };
-
-    const newMapping: DocumentMapping = {
-      id: `map-${Date.now()}`,
-      documentId,
-      portfolioId: mappingId,
-      category: selectedCategory,
-      documentType: selectedDocType,
-      mappedAt: now,
-      isOriginal: true
-    };
-
-    setDocuments(prev => [...prev, newDoc]);
-    setDocumentMappings(prev => [...prev, newMapping]);
-    
-    // Reset Form States
-    setUploadedFile(null);
-    setLinkTitle("");
-    setLinkUrl("");
-    setLinkDescription("");
-
-    alert(`Evidence ${resourceType === "LINK" ? "link" : "document"} [${selectedDocType}] successfully mapped and added to portfolio!`);
   };
 
   const handleEditMapping = (id: string) => {
@@ -1630,10 +1678,11 @@ export default function CourseActivityHubView() {
                 <button
                   type="button"
                   onClick={handleSaveEvidenceDocument}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4.5 py-2 text-xs font-black text-white shadow-md shadow-red-100/50 hover:bg-red-700 transition focus:outline-none focus:ring-4 focus:ring-red-100"
+                  disabled={isUploading}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-600 px-4.5 py-2 text-xs font-black text-white shadow-md shadow-red-100/50 hover:bg-red-700 transition focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Icon name="check" className="h-3.5 w-3.5" />
-                  <span>{resourceType === "LINK" ? "Map & Save Link" : "Map & Upload File"}</span>
+                  <span>{isUploading ? "Uploading..." : resourceType === "LINK" ? "Map & Save Link" : "Map & Upload File"}</span>
                 </button>
               </div>
             </div>
