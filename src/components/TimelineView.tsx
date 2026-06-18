@@ -67,7 +67,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2024-25",
     isMock: true,
-    branch: "Artificial Intelligence and Data Science (AIDS)",
+    branch: "Artificial Intelligence & Data Science (AIDS)",
   },
   {
     id: 202,
@@ -89,7 +89,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2023-24",
     isMock: true,
-    branch: "Computer and Communication Engineering (CCE)",
+    branch: "Computer and Communication Systems (CCS)",
   },
   {
     id: 302,
