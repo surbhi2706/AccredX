@@ -16,11 +16,10 @@ type SavedActivity = {
 };
 
 type CvPreviewModalProps = {
+  profile: FacultyProfile | null;
   activities: SavedActivity[];
   onClose: () => void;
 };
-
-const STORAGE_KEY = "accredx_faculty_profile";
 
 // Editable cell component that updates parent state on blur to avoid cursor jumps
 const EditableCell = ({
@@ -105,22 +104,21 @@ const EditableList = ({
   );
 };
 
-export default function CvPreviewModal({ activities, onClose }: CvPreviewModalProps) {
-  const [profile, setProfile] = useState<FacultyProfile | null>(null);
+export default function CvPreviewModal({ profile, activities, onClose }: CvPreviewModalProps) {
 
   // States for CV preview (editable)
   const [profileInfo, setProfileInfo] = useState({
-    name: "Faculty Name",
-    email: "email@somaiya.edu",
-    contact: "Phone Number",
-    department: "Department",
-    college: "K J Somaiya College of Engineering",
+    name: "",
+    email: "",
+    contact: "",
+    department: "",
+    college: "",
     doj: "",
     careerExp: "",
     industryExp: "",
     teachingExp: "",
-    designationAcademic: "Assistant Professor",
-    designationAdmin: "—",
+    designationAcademic: "",
+    designationAdmin: "",
   });
 
   const [researchAreas, setResearchAreas] = useState<string[]>([
@@ -214,82 +212,70 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
   });
 
   useEffect(() => {
-    loadProfile();
-  }, []);
+    if (profile) {
+      setProfileInfo({
+        name: profile.fullName || "",
+        email: profile.officialEmail || "",
+        contact: profile.phoneNumber || "",
+        department: profile.department || "",
+        college: profile.schoolInstitute || "",
+        doj: profile.dateOfJoining || "",
+        careerExp: profile.careerExperience || "",
+        industryExp: profile.industryExperience || "",
+        teachingExp: profile.teachingExperience || "",
+        designationAcademic: profile.designation || "",
+        designationAdmin: profile.administrativeDesignation || "",
+      });
 
-  const loadProfile = () => {
-    const savedData = localStorage.getItem(STORAGE_KEY);
-    if (savedData) {
-      try {
-        const parsed: FacultyProfile = JSON.parse(savedData);
-        setProfile(parsed);
-        
-        // Initialize profile info state
-        setProfileInfo({
-          name: parsed.fullName || "",
-          email: parsed.officialEmail || "",
-          contact: parsed.phoneNumber || "",
-          department: parsed.department || "",
-          college: parsed.schoolInstitute || "K J Somaiya College of Engineering",
-          doj: parsed.dateOfJoining || "",
-          careerExp: parsed.careerExperience || "",
-          industryExp: parsed.industryExperience || "",
-          teachingExp: parsed.teachingExperience || "",
-          designationAcademic: parsed.designation || "",
-          designationAdmin: parsed.administrativeDesignation || "—",
-        });
+      const EXAMINATIONS = ["Ph.D", "PG", "UG", "Diploma", "NET/SET/Other"] as const;
+      let eduData: EducationEntry[] = EXAMINATIONS.map((exam) => ({
+        examination: exam,
+        degree: "",
+        university: "",
+        institute: "",
+        yearOfPassing: "",
+        cgpaOrPercentage: "",
+      }));
 
-        const EXAMINATIONS = ["Ph.D", "PG", "UG", "Diploma", "NET/SET/Other"] as const;
-        let eduData: EducationEntry[] = [
-          { examination: "Ph.D", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
-          { examination: "PG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
-          { examination: "UG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
-          { examination: "Diploma", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
-          { examination: "NET/SET/Other", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
-        ];
+      if (profile.education && profile.education.length > 0) {
+        eduData = EXAMINATIONS.map((exam) => {
+          const match = profile.education.find((e: any) => {
+            if (!e) return false;
+            if (e.examination === exam) return true;
+            const examLower = exam.toLowerCase();
+            const degLower = (e.degree || "").toLowerCase();
+            
+            if (examLower === "ph.d" && (degLower.includes("phd") || degLower.includes("ph.d"))) return true;
+            if (examLower === "pg" && (degLower.includes("m.tech") || degLower.includes("mtech") || degLower.includes("master") || degLower.includes("pg") || degLower.includes("mba") || degLower.includes("m.e") || degLower.includes("me"))) return true;
+            if (examLower === "ug" && (degLower.includes("b.tech") || degLower.includes("btech") || degLower.includes("bachelor") || degLower.includes("ug") || degLower.includes("b.e") || degLower.includes("be") || degLower.includes("b.sc") || degLower.includes("bsc"))) return true;
+            if (examLower === "diploma" && degLower.includes("diploma")) return true;
+            return false;
+          });
 
-        if (parsed.education && parsed.education.length > 0) {
-          eduData = EXAMINATIONS.map((exam) => {
-            const match = parsed.education.find((e: any) => {
-              if (!e) return false;
-              if (e.examination === exam) return true;
-              const examLower = exam.toLowerCase();
-              const degLower = (e.degree || "").toLowerCase();
-              
-              if (examLower === "ph.d" && (degLower.includes("phd") || degLower.includes("ph.d"))) return true;
-              if (examLower === "pg" && (degLower.includes("m.tech") || degLower.includes("mtech") || degLower.includes("master") || degLower.includes("pg") || degLower.includes("mba") || degLower.includes("m.e") || degLower.includes("me"))) return true;
-              if (examLower === "ug" && (degLower.includes("b.tech") || degLower.includes("btech") || degLower.includes("bachelor") || degLower.includes("ug") || degLower.includes("b.e") || degLower.includes("be") || degLower.includes("b.sc") || degLower.includes("bsc"))) return true;
-              if (examLower === "diploma" && degLower.includes("diploma")) return true;
-              return false;
-            });
-
-            if (match) {
-              return {
-                examination: exam,
-                degree: match.degree || "",
-                university: match.university || match.institute || "",
-                institute: match.institute || "",
-                yearOfPassing: match.yearOfPassing || "",
-                cgpaOrPercentage: match.cgpaOrPercentage || "",
-              };
-            }
-
+          if (match) {
             return {
               examination: exam,
-              degree: "",
-              university: "",
-              institute: "",
-              yearOfPassing: "",
-              cgpaOrPercentage: "",
+              degree: match.degree || "",
+              university: match.university || match.institute || "",
+              institute: match.institute || "",
+              yearOfPassing: match.yearOfPassing || "",
+              cgpaOrPercentage: match.cgpaOrPercentage || "",
             };
-          });
-        }
-        setEducationHistory(eduData);
-      } catch (e) {
-        console.error("Failed to load profile", e);
+          }
+
+          return {
+            examination: exam,
+            degree: "",
+            university: "",
+            institute: "",
+            yearOfPassing: "",
+            cgpaOrPercentage: "",
+          };
+        });
       }
+      setEducationHistory(eduData);
     }
-  };
+  }, [profile]);
 
   useEffect(() => {
     if (activities && activities.length > 0) {
@@ -652,14 +638,9 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={loadProfile}
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-250 bg-white px-3.5 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-slate-50 font-sans"
-            >
-              <Icon name="info" className="h-4 w-4 text-gray-500" />
-              Reset Profile Info
-            </button>
+            <div className="text-xs text-gray-500 font-sans italic">
+              Profile information is automatically synced.
+            </div>
 
             <button
               onClick={() => {
