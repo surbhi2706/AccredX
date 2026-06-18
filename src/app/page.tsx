@@ -466,6 +466,7 @@ export default function Home() {
 
       {previewReportType === "Somaiya CV" && (
         <CvPreviewModal
+          profile={savedProfile}
           activities={savedActivities}
           onClose={() => setPreviewReportType(null)}
         />
