@@ -25,6 +25,11 @@ export function getErrorMessage(error: unknown, fallback: string): string {
     return fallback;
 }
 
+export function getSheetRange(sheetName: string, range: string): string {
+    const escapedSheetName = sheetName.replace(/'/g, "''");
+    return `'${escapedSheetName}'!${range}`;
+}
+
 export async function getOrCreateFolder(
     drive: drive_v3.Drive,
     folderName: string,

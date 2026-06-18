@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { drive_v3, google, sheets_v4 } from "googleapis";
+import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
 import os from "os";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getErrorStatus, getErrorMessage, getOrCreateFolder, getRepositoryFolder } from "@/lib/driveHelpers";
+import { getErrorStatus, getErrorMessage, getOrCreateFolder, getRepositoryFolder, getSheetRange } from "@/lib/driveHelpers";
 
 export async function POST(req: NextRequest) {
     try {
@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
                 // Initialize headers
                 await sheets.spreadsheets.values.update({
                     spreadsheetId,
-                    range: `${targetTabName}!A1:Z1`,
+                    range: getSheetRange(targetTabName, "A1:Z1"),
                     valueInputOption: "USER_ENTERED",
                     requestBody: {
                         values: [expectedHeaders]
@@ -226,7 +226,7 @@ export async function POST(req: NextRequest) {
             // Append Data
             await sheets.spreadsheets.values.append({
                 spreadsheetId,
-                range: `${targetTabName}!A:Z`,
+                range: getSheetRange(targetTabName, "A:Z"),
                 valueInputOption: "USER_ENTERED",
                 insertDataOption: "INSERT_ROWS",
                 requestBody: {

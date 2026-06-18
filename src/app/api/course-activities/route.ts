@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
-import { drive_v3, google, sheets_v4 } from "googleapis";
+import { drive_v3, google } from "googleapis";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getErrorStatus, getErrorMessage, getOrCreateFolder, getRepositoryFolder } from "@/lib/driveHelpers";
+import { getErrorMessage, getOrCreateFolder, getRepositoryFolder, getSheetRange } from "@/lib/driveHelpers";
 
 const SHEET_NAME = "AccredX Activities";
 const TARGET_TAB_NAME = "Course Activities";
+
+type GoogleSession = {
+    accessToken?: string;
+    error?: string;
+    user?: {
+        email?: string | null;
+        name?: string | null;
+    };
+};
+
+type CourseActivityUpdateInput = {
+    recordId?: string;
+    academicYear: string;
+    branch: string;
+    semester: string;
+    courseName: string;
+    courseCode: string;
+    documentCategory: string;
+    documentType: string;
+    description?: string;
+};
 
 async function getCourseActivitiesSpreadsheet(drive: drive_v3.Drive, repositoryFolderId: string): Promise<string | undefined> {
     const sheetSearch = await drive.files.list({
@@ -22,10 +43,23 @@ async function getCourseActivitiesSpreadsheet(drive: drive_v3.Drive, repositoryF
     return undefined;
 }
 
-export async function GET(req: NextRequest) {
+async function hasTargetSheet(sheets: ReturnType<typeof google.sheets>, spreadsheetId: string): Promise<boolean> {
+    const spreadsheetData = await sheets.spreadsheets.get({
+        spreadsheetId,
+        fields: "sheets.properties.title",
+    });
+
+    return Boolean(
+        spreadsheetData.data.sheets?.some(
+            (sheet) => sheet.properties?.title === TARGET_TAB_NAME
+        )
+    );
+}
+
+export async function GET() {
     try {
         const session = await getServerSession(authOptions);
-        const googleSession = session as any;
+        const googleSession = session as (typeof session & GoogleSession);
 
         if (!googleSession || !googleSession.accessToken || !googleSession.user?.email) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -44,9 +78,13 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ activities: [] });
         }
 
+        if (!(await hasTargetSheet(sheets, spreadsheetId))) {
+            return NextResponse.json({ activities: [] });
+        }
+
         const valuesResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${TARGET_TAB_NAME}!A:Z`,
+            range: getSheetRange(TARGET_TAB_NAME, "A:Z"),
         });
 
         const rows = (valuesResponse.data.values ?? []) as string[][];
@@ -105,7 +143,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         const session = await getServerSession(authOptions);
-        const googleSession = session as any;
+        const googleSession = session as (typeof session & GoogleSession);
 
         if (!googleSession || !googleSession.accessToken) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -139,7 +177,7 @@ export async function DELETE(req: NextRequest) {
 
         const valuesResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${TARGET_TAB_NAME}!A:Z`,
+            range: getSheetRange(TARGET_TAB_NAME, "A:Z"),
         });
 
         const rows = (valuesResponse.data.values ?? []) as string[][];
@@ -186,7 +224,7 @@ export async function DELETE(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
     try {
-        const body = await req.json();
+        const body = (await req.json()) as CourseActivityUpdateInput;
         const { recordId, academicYear, branch, semester, courseName, courseCode, documentCategory, documentType, description } = body;
 
         if (!recordId) {
@@ -194,7 +232,7 @@ export async function PUT(req: NextRequest) {
         }
 
         const session = await getServerSession(authOptions);
-        const googleSession = session as any;
+        const googleSession = session as (typeof session & GoogleSession);
 
         if (!googleSession || !googleSession.accessToken) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -215,7 +253,7 @@ export async function PUT(req: NextRequest) {
 
         const valuesResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
-            range: `${TARGET_TAB_NAME}!A:Z`,
+            range: getSheetRange(TARGET_TAB_NAME, "A:Z"),
         });
 
         const rows = (valuesResponse.data.values ?? []) as string[][];
@@ -252,10 +290,13 @@ export async function PUT(req: NextRequest) {
         const driveFileId = rowValue("Drive File ID");
         const metadataJsonStr = rowValue("Metadata JSON");
         
-        let metadata = {};
+        let metadata: Record<string, unknown> = {};
         try {
-            metadata = JSON.parse(metadataJsonStr || "{}");
-        } catch(e) {}
+            const parsedMetadata = JSON.parse(metadataJsonStr || "{}");
+            if (parsedMetadata && typeof parsedMetadata === "object" && !Array.isArray(parsedMetadata)) {
+                metadata = parsedMetadata;
+            }
+        } catch {}
         
         const newMetadata = { ...metadata, description };
 
@@ -326,7 +367,7 @@ export async function PUT(req: NextRequest) {
 
         await sheets.spreadsheets.values.update({
             spreadsheetId,
-            range: `${TARGET_TAB_NAME}!A${sheetRowNumber}:Z${sheetRowNumber}`,
+            range: getSheetRange(TARGET_TAB_NAME, `A${sheetRowNumber}:Z${sheetRowNumber}`),
             valueInputOption: "USER_ENTERED",
             requestBody: {
                 values: [newRow]
