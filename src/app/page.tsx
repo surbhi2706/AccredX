@@ -96,18 +96,27 @@ export default function Home() {
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [savedProfile, setSavedProfile] = useState<any>(null);
 
+  const { data: session, status } = useSession();
+
   useEffect(() => {
-    const saved = localStorage.getItem("accredx_faculty_profile");
-    if (saved) {
+    if (status !== "authenticated") return;
+
+    async function fetchProfile() {
       try {
-        setSavedProfile(JSON.parse(saved));
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.profile) {
+            setSavedProfile(data.profile);
+          }
+        }
       } catch (e) {
-        console.error("Failed to parse saved profile", e);
+        console.error("Failed to fetch profile", e);
       }
     }
-  }, []);
 
-  const { data: session, status } = useSession();
+    fetchProfile();
+  }, [status]);
 
   useEffect(() => {
     if (status !== "authenticated" || !session?.user?.email) return;
