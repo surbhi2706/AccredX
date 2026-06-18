@@ -169,11 +169,16 @@ function getStandardCategory(activityType: string): string {
 
 export default function CourseActivityHubView() {
   const branchesList = [
+    "Artificial Intelligence & Data Science (AIDS)",
+    "Computer and Communication Systems (CCS)",
     "Computer Engineering (COMP)",
+    "Computer Science and Business Systems (CSBS)",
+    "Electronics and Computer Engineering (EXCP)",
+    "Electronics and Telecommunication Engineering (EXTC)",
     "Information Technology (IT)",
-    "Electronics and Telecommunication (EXTC)",
     "Mechanical Engineering (MECH)",
-    "Civil Engineering (CIVIL)"
+    "Robotics and Artificial Intelligence (RAI)",
+    "VLSI Design and Technology (VLSI)"
   ];
   
   const academicYears = [
