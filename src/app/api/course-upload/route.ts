@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     try {
         const formData = await req.formData();
 
-        const file = formData.get("file") as File;
+        const file = formData.get("file") as File | null;
         const academicYear = (formData.get("academicYear") as string)?.trim() || "";
         const branch = (formData.get("branch") as string)?.trim() || "";
         const semester = (formData.get("semester") as string)?.trim() || "";
@@ -20,9 +20,22 @@ export async function POST(req: NextRequest) {
         const documentCategory = (formData.get("documentCategory") as string)?.trim() || "";
         const documentType = (formData.get("documentType") as string)?.trim() || "";
         const metadata = (formData.get("metadata") as string)?.trim() || "{}";
+        const externalUrl = (formData.get("externalUrl") as string)?.trim() || "";
+        const linkTitle = (formData.get("linkTitle") as string)?.trim() || "";
 
-        if (!file) {
+        let parsedMetadata: Record<string, string> = {};
+        try {
+            parsedMetadata = JSON.parse(metadata);
+        } catch (e) {
+            console.error("Failed to parse metadata", e);
+        }
+        const resourceType = parsedMetadata.resourceType || "FILE";
+
+        if (resourceType === "FILE" && !file) {
             return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+        }
+        if (resourceType === "LINK" && !externalUrl) {
+            return NextResponse.json({ error: "No external URL provided" }, { status: 400 });
         }
         if (!academicYear || !branch || !semester || !courseName || !courseCode || !documentCategory || !documentType) {
             return NextResponse.json({ error: "Missing required course activity folder metadata" }, { status: 400 });
@@ -51,67 +64,86 @@ export async function POST(req: NextRequest) {
         const drive = google.drive({ version: "v3", auth });
         const sheets = google.sheets({ version: "v4", auth });
 
+        let driveFileId = "";
+        let driveFileUrl = "";
         let finalFolderId = null;
         let repositoryFolderId = "";
         let repositoryWarning = "";
+        let fileName = "";
 
-        // 1. Create Nested Folder Structure
-        try {
-            const repositoryFolder = await getRepositoryFolder(drive);
-            repositoryFolderId = repositoryFolder.id;
-            repositoryWarning = repositoryFolder.warning;
+        if (resourceType === "FILE" && file) {
+            fileName = file.name;
+            // 1. Create Nested Folder Structure
+            try {
+                const repositoryFolder = await getRepositoryFolder(drive);
+                repositoryFolderId = repositoryFolder.id;
+                repositoryWarning = repositoryFolder.warning;
 
-            const courseActivityRootId = await getOrCreateFolder(drive, "Course Activity", repositoryFolderId);
-            const yearFolderId = await getOrCreateFolder(drive, academicYear, courseActivityRootId);
-            const branchFolderId = await getOrCreateFolder(drive, branch, yearFolderId);
-            const semesterFolderId = await getOrCreateFolder(drive, semester, branchFolderId);
-            const courseFolderId = await getOrCreateFolder(drive, `${courseCode} - ${courseName}`, semesterFolderId);
-            const categoryFolderId = await getOrCreateFolder(drive, documentCategory, courseFolderId);
-            finalFolderId = await getOrCreateFolder(drive, documentType, categoryFolderId);
-        } catch (folderError: unknown) {
-            console.error("Error creating folder structure:", folderError);
-            const status = getErrorStatus(folderError);
+                const courseActivityRootId = await getOrCreateFolder(drive, "Course Activity", repositoryFolderId);
+                const yearFolderId = await getOrCreateFolder(drive, academicYear, courseActivityRootId);
+                const branchFolderId = await getOrCreateFolder(drive, branch, yearFolderId);
+                const semesterFolderId = await getOrCreateFolder(drive, semester, branchFolderId);
+                const courseFolderId = await getOrCreateFolder(drive, `${courseCode} - ${courseName}`, semesterFolderId);
+                const categoryFolderId = await getOrCreateFolder(drive, documentCategory, courseFolderId);
+                finalFolderId = await getOrCreateFolder(drive, documentType, categoryFolderId);
+            } catch (folderError: unknown) {
+                console.error("Error creating folder structure:", folderError);
+                const status = getErrorStatus(folderError);
 
-            if (status === 401) {
-                return NextResponse.json(
-                    { error: "Your Google authorization has expired. Please sign out and sign in again." },
-                    { status: 401 }
-                );
+                if (status === 401) {
+                    return NextResponse.json(
+                        { error: "Your Google authorization has expired. Please sign out and sign in again." },
+                        { status: 401 }
+                    );
+                }
+
+                if (status === 403 || status === 404) {
+                    return NextResponse.json(
+                        {
+                            error:
+                                "The configured Google Drive repository is unavailable. Share it with the signed-in account, verify GOOGLE_DRIVE_FOLDER_ID, then sign out and sign in again.",
+                        },
+                        { status: 403 }
+                    );
+                }
+
+                throw new Error(getErrorMessage(folderError, "Failed to create folder structure in Google Drive."));
             }
 
-            if (status === 403 || status === 404) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "The configured Google Drive repository is unavailable. Share it with the signed-in account, verify GOOGLE_DRIVE_FOLDER_ID, then sign out and sign in again.",
-                    },
-                    { status: 403 }
-                );
-            }
+            // 2. Upload File to Drive
+            const bytes = await file.arrayBuffer();
+            const buffer = Buffer.from(bytes);
+            const tempPath = path.join(os.tmpdir(), `${Date.now()}-${file.name}`);
 
-            throw new Error(getErrorMessage(folderError, "Failed to create folder structure in Google Drive."));
+            fs.writeFileSync(tempPath, buffer);
+
+            const response = await drive.files.create({
+                requestBody: {
+                    name: file.name,
+                    parents: finalFolderId ? [finalFolderId] : undefined,
+                },
+                media: {
+                    mimeType: file.type,
+                    body: fs.createReadStream(tempPath),
+                },
+                supportsAllDrives: true,
+            });
+
+            fs.unlinkSync(tempPath);
+            driveFileId = response.data.id || "";
+            driveFileUrl = `https://drive.google.com/file/d/${driveFileId}/view`;
+        } else {
+            // For LINK resource
+            fileName = linkTitle || "External Link";
+            
+            // Still need repository folder ID for the Google Sheet
+            try {
+                const repositoryFolder = await getRepositoryFolder(drive);
+                repositoryFolderId = repositoryFolder.id;
+            } catch (folderError: unknown) {
+                console.error("Error fetching repository folder:", folderError);
+            }
         }
-
-        // 2. Upload File to Drive
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const tempPath = path.join(os.tmpdir(), `${Date.now()}-${file.name}`);
-
-        fs.writeFileSync(tempPath, buffer);
-
-        const response = await drive.files.create({
-            requestBody: {
-                name: file.name,
-                parents: finalFolderId ? [finalFolderId] : undefined,
-            },
-            media: {
-                mimeType: file.type,
-                body: fs.createReadStream(tempPath),
-            },
-            supportsAllDrives: true,
-        });
-
-        fs.unlinkSync(tempPath);
 
         let sheetsSuccess = false;
         let sheetsErrorMsg = "";
@@ -159,7 +191,7 @@ export async function POST(req: NextRequest) {
                 "Record ID", "Timestamp", "Faculty Email", "Faculty Name", "Academic Year", 
                 "Branch", "Semester", "Course Name", "Course Code", "Document Category",
                 "Document Type", "Evidence File Name", "Drive File URL", 
-                "Drive File ID", "Metadata JSON"
+                "Drive File ID", "Metadata JSON", "Resource Type", "External URL"
             ];
 
             if (!existingTabs.includes(targetTabName)) {
@@ -186,19 +218,10 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            const driveFileId = response.data.id;
-            const driveFileUrl = `https://drive.google.com/file/d/${driveFileId}/view`;
             const facultyName = googleSession.user?.name || "Unknown Faculty";
             const facultyEmail = googleSession.user?.email || "unknown@example.com";
             const timestamp = new Date().toISOString();
             const recordId = crypto.randomUUID();
-
-            let parsedMetadata: Record<string, string> = {};
-            try {
-                parsedMetadata = JSON.parse(metadata);
-            } catch (e) {
-                console.error("Failed to parse metadata", e);
-            }
 
             // Append Data
             await sheets.spreadsheets.values.append({
@@ -220,10 +243,12 @@ export async function POST(req: NextRequest) {
                             courseCode,
                             documentCategory,
                             documentType,
-                            file.name,
+                            fileName,
                             driveFileUrl,
                             driveFileId,
-                            JSON.stringify(parsedMetadata)
+                            JSON.stringify(parsedMetadata),
+                            resourceType,
+                            externalUrl
                         ]
                     ]
                 }
@@ -240,7 +265,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            fileId: response.data.id,
+            fileId: driveFileId,
             folderId: finalFolderId,
             repositoryFolderId,
             repositoryWarning,

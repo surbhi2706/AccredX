@@ -258,8 +258,8 @@ export default function CourseActivityHubView() {
           fileSize: undefined,
           uploadedBy: activity.facultyName || activity.facultyEmail,
           createdAt: activity.timestamp,
-          resourceType: metadata.resourceType || (activity.driveFileUrl?.includes("drive.google.com") ? "FILE" : "LINK"),
-          externalUrl: activity.driveFileUrl,
+          resourceType: activity.resourceType || metadata.resourceType || (activity.driveFileUrl?.includes("drive.google.com") ? "FILE" : "LINK"),
+          externalUrl: activity.externalUrl || activity.driveFileUrl,
           driveFileId: activity.driveFileId,
           description: metadata.description || ""
         });
@@ -428,46 +428,42 @@ export default function CourseActivityHubView() {
     setIsUploading(true);
 
     try {
-      let documentDriveUrl = externalUrl;
-      
-      // Upload to Google Drive if it's a file
+      const formData = new FormData();
       if (resourceType === "FILE" && uploadedFile) {
-        const formData = new FormData();
         formData.append("file", uploadedFile);
-        formData.append("academicYear", selectedYear);
-        formData.append("branch", selectedBranch);
-        formData.append("semester", selectedSemester);
-        formData.append("courseName", courseName);
-        formData.append("courseCode", courseCode);
-        formData.append("documentCategory", selectedCategory);
-        formData.append("documentType", selectedDocType);
-        
-        const metadataObj = {
-          description: description || "",
-          resourceType
-        };
-        formData.append("metadata", JSON.stringify(metadataObj));
+      } else if (resourceType === "LINK") {
+        formData.append("externalUrl", externalUrl || "");
+        formData.append("linkTitle", name || "");
+      }
 
-        const res = await fetch("/api/course-upload", {
-          method: "POST",
-          body: formData,
-        });
+      formData.append("academicYear", selectedYear);
+      formData.append("branch", selectedBranch);
+      formData.append("semester", selectedSemester);
+      formData.append("courseName", courseName);
+      formData.append("courseCode", courseCode);
+      formData.append("documentCategory", selectedCategory);
+      formData.append("documentType", selectedDocType);
+      
+      const metadataObj = {
+        description: description || "",
+        resourceType
+      };
+      formData.append("metadata", JSON.stringify(metadataObj));
 
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.details || errData.error || "Course activity upload failed");
-        }
+      const res = await fetch("/api/course-upload", {
+        method: "POST",
+        body: formData,
+      });
 
-        const uploadResult = await res.json();
-        
-        if (uploadResult.sheetsSuccess === false) {
-          console.warn("Google Sheets update issue:", uploadResult.sheetsError);
-        }
-        
-        // Use the returned URL for local state if needed (or just use default)
-        // Note: the backend actually returns the fileId, we can build the URL
-        documentDriveUrl = `https://drive.google.com/file/d/${uploadResult.fileId}/view`;
-        externalUrl = documentDriveUrl; 
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.details || errData.error || "Course activity upload failed");
+      }
+
+      const uploadResult = await res.json();
+      
+      if (uploadResult.sheetsSuccess === false) {
+        console.warn("Google Sheets update issue:", uploadResult.sheetsError);
       }
 
       // Refresh state from Google Sheets
@@ -1830,69 +1826,49 @@ function DocumentCard({
       </div>
 
       <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
-        {doc.resourceType === "LINK" ? (
-          <a
-            href={doc.externalUrl || "#"}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-blue-250 bg-blue-50/50 px-2 py-2 text-xs font-black text-blue-750 transition hover:bg-blue-100/50 cursor-pointer text-center"
+        <div className="flex gap-2 flex-1">
+          <button
+            type="button"
+            onClick={() => onEdit(doc.mappingId)}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
           >
-            <Icon name="info" className="h-3.5 w-3.5 text-blue-500" />
-            Open Link
-          </a>
-        ) : (
-          <>
-            <div className="flex gap-2 flex-1">
-              <button
-                type="button"
-                onClick={() => onEdit(doc.mappingId)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer"
-              >
-                <Icon name="edit" className="h-3.5 w-3.5 text-slate-500" />
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete(doc.mappingId)}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-2 py-2 text-xs font-black text-red-700 transition hover:bg-red-100 cursor-pointer"
-              >
-                <Icon name="trash" className="h-3.5 w-3.5" />
-                Delete
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                if (doc.externalUrl) {
-                  window.open(doc.externalUrl, '_blank');
-                } else if (doc.driveFileId) {
-                  window.open(`https://drive.google.com/file/d/${doc.driveFileId}/view`, '_blank');
-                } else {
-                  alert("Error: Google Drive metadata is missing for this file.");
-                }
-              }}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer text-center"
-            >
-              <Icon name="info" className="h-3.5 w-3.5 text-slate-500" />
-              View
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                if (doc.driveFileId) {
-                  window.open(`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`, '_blank');
-                } else {
-                  alert("Error: Google Drive File ID is missing for this file.");
-                }
-              }}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100 cursor-pointer text-center"
-            >
-              <Icon name="upload" className="h-3.5 w-3.5 text-emerald-600 rotate-180" />
-              Download
-            </button>
-          </>
+            <Icon name="edit" className="h-3.5 w-3.5 text-slate-500" />
+            Edit
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            if (doc.externalUrl) {
+              window.open(doc.externalUrl, '_blank');
+            } else if (doc.driveFileId) {
+              window.open(`https://drive.google.com/file/d/${doc.driveFileId}/view`, '_blank');
+            } else {
+              alert("Error: Metadata is missing for this resource.");
+            }
+          }}
+          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs font-extrabold text-slate-700 transition hover:bg-slate-50 cursor-pointer text-center"
+        >
+          <Icon name="info" className="h-3.5 w-3.5 text-slate-500" />
+          View
+        </button>
+        {doc.resourceType !== "LINK" && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              if (doc.driveFileId) {
+                window.open(`https://drive.google.com/uc?export=download&id=${doc.driveFileId}`, '_blank');
+              } else {
+                alert("Error: Google Drive File ID is missing for this file.");
+              }
+            }}
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2 py-2 text-xs font-black text-emerald-700 transition hover:bg-emerald-100 cursor-pointer text-center"
+          >
+            <Icon name="upload" className="h-3.5 w-3.5 text-emerald-600 rotate-180" />
+            Download
+          </button>
         )}
         <button
           type="button"

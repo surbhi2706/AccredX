@@ -82,7 +82,9 @@ export async function GET(req: NextRequest) {
                 evidenceFileName: rowValue(row, "Evidence File Name"),
                 driveFileUrl: rowValue(row, "Drive File URL"),
                 driveFileId: rowValue(row, "Drive File ID"),
-                metadataJson: rowValue(row, "Metadata JSON")
+                metadataJson: rowValue(row, "Metadata JSON"),
+                resourceType: rowValue(row, "Resource Type"),
+                externalUrl: rowValue(row, "External URL")
             };
         }).filter(a => a.facultyEmail.toLowerCase() === signedInEmail && a.recordId);
 
