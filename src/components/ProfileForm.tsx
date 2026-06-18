@@ -188,7 +188,12 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
         }
         setTimeout(() => setIsSaved(false), 3000);
       } else {
-        alert("Failed to save profile to Google Sheets.");
+        const data = await res.json().catch(() => ({}));
+        const message =
+          data.error === "Unauthorized" || res.status === 401
+            ? data.error || "Your Google session expired. Sign out and sign in again."
+            : data.details || data.error || "Failed to save profile to Google Sheets.";
+        alert(message);
       }
     } catch (e) {
       console.error("Save error", e);

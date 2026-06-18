@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { drive_v3, google, sheets_v4 } from "googleapis";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getErrorMessage, getRepositoryFolder } from "@/lib/driveHelpers";
 
 const REPOSITORY_NAME = "AccredX Repository";
 const SPREADSHEET_NAME = "AccredX Activities";
@@ -61,6 +62,29 @@ async function findSpreadsheetId(drive: drive_v3.Drive, repositoryFolderId: stri
         spaces: "drive",
     });
     return sheetSearch.data.files?.[0]?.id ?? undefined;
+}
+
+async function getOrCreateSpreadsheetId(
+    drive: drive_v3.Drive,
+    repositoryFolderId: string
+): Promise<string> {
+    const existingId = await findSpreadsheetId(drive, repositoryFolderId);
+    if (existingId) return existingId;
+
+    const spreadsheet = await drive.files.create({
+        requestBody: {
+            name: SPREADSHEET_NAME,
+            mimeType: "application/vnd.google-apps.spreadsheet",
+            parents: [repositoryFolderId],
+        },
+        fields: "id",
+    });
+
+    if (!spreadsheet.data.id) {
+        throw new Error("Google Drive did not return a spreadsheet ID.");
+    }
+
+    return spreadsheet.data.id;
 }
 
 async function ensureProfileSheetExists(sheets: sheets_v4.Sheets, spreadsheetId: string) {
@@ -186,7 +210,14 @@ export async function POST(req: NextRequest) {
         const googleSession = session as (typeof session & GoogleSession);
 
         if (!googleSession || !googleSession.accessToken || googleSession.error || !googleSession.user?.email) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json(
+                {
+                    error: googleSession?.error === "RefreshAccessTokenError"
+                        ? "Your Google session has expired. Please sign out and sign in again."
+                        : "Unauthorized",
+                },
+                { status: 401 }
+            );
         }
 
         const inputProfile = await req.json();
@@ -195,11 +226,8 @@ export async function POST(req: NextRequest) {
         const drive = google.drive({ version: "v3", auth });
         const sheets = google.sheets({ version: "v4", auth });
 
-        const repositoryFolderId = await findRepositoryFolderId(drive);
-        if (!repositoryFolderId) throw new Error("Repository folder not found.");
-
-        const spreadsheetId = await findSpreadsheetId(drive, repositoryFolderId);
-        if (!spreadsheetId) throw new Error("Spreadsheet not found.");
+        const { id: repositoryFolderId } = await getRepositoryFolder(drive);
+        const spreadsheetId = await getOrCreateSpreadsheetId(drive, repositoryFolderId);
 
         await ensureProfileSheetExists(sheets, spreadsheetId);
 
@@ -284,6 +312,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: true, profile: inputProfile });
     } catch (error: unknown) {
         console.error("Error saving profile:", error);
-        return NextResponse.json({ error: "Failed to save profile" }, { status: 500 });
+        return NextResponse.json(
+            {
+                error: "Failed to save profile",
+                details: getErrorMessage(error, "Unable to save profile to Google Sheets."),
+            },
+            { status: 500 }
+        );
     }
 }
