@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/Icon";
 import type { FacultyProfile, EducationEntry } from "@/types/profile";
-import { handleExportReport } from "@/utils/export";
+import { handleExportReport, handleExportWord } from "@/utils/export";
 
 type SavedActivity = {
   id: number;
@@ -673,6 +673,41 @@ export default function CvPreviewModal({ activities, onClose }: CvPreviewModalPr
             >
               <Icon name="check" className="h-4 w-4" />
               Export PDF / Print
+            </button>
+
+            <button
+              onClick={() => {
+                const nameStr = profileInfo.name
+                  ? profileInfo.name.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
+                  : "Faculty";
+                handleExportWord({
+                  fileName: `${nameStr}_CV`,
+                  profileInfo,
+                  researchAreas,
+                  coursesDelivered,
+                  teacherUG,
+                  teacherPG,
+                  teacherPhD,
+                  recognitions,
+                  educationHistory,
+                  notableExperience,
+                  researchAccomplishments,
+                  detailsPublications,
+                  researchProjects,
+                  iprCopyrights,
+                  fdpAttended,
+                  fdpOrganized,
+                  fdpDelivered,
+                  keyAchievements,
+                  positionsResponsibility,
+                  cvDate,
+                });
+              }}
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-black text-red-700 shadow-sm transition hover:bg-red-50 font-sans"
+            >
+              <Icon name="file" className="h-4 w-4" />
+              Export Word
             </button>
 
             <span className="h-6 w-px bg-gray-200 mx-1"></span>
