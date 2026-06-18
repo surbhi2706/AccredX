@@ -198,11 +198,11 @@ export default function CourseActivityHubView() {
   const [selectedSemester, setSelectedSemester] = useState<string>(semestersList[0]);
 
   // Text inputs for Course details
-  const [inputCourseName, setInputCourseName] = useState<string>("Applied Mathematics-I (Theory)");
-  const [inputCourseCode, setInputCourseCode] = useState<string>("COMP101");
+  const [inputCourseName, setInputCourseName] = useState<string>("");
+  const [inputCourseCode, setInputCourseCode] = useState<string>("");
 
   // Track if a saved mapping is selected
-  const [selectedMappingId, setSelectedMappingId] = useState<string>("mapping-default-1");
+  const [selectedMappingId, setSelectedMappingId] = useState<string>("");
 
   // Linked Category and Document Type state variables for staging
   const [selectedCategory, setSelectedCategory] = useState<string>("Teaching Documents");
@@ -217,12 +217,18 @@ export default function CourseActivityHubView() {
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
   const [documentMappings, setDocumentMappings] = useState<DocumentMapping[]>([]);
 
-  const fetchCourseActivities = async () => {
+  const fetchCourseActivities = async (
+    targetYear = selectedYear,
+    targetBranch = selectedBranch,
+    targetSemester = selectedSemester
+  ) => {
     setIsLoadingData(true);
     try {
+      console.log(`[DEBUG] fetchCourseActivities started with filters - Year: ${targetYear}, Branch: ${targetBranch}, Semester: ${targetSemester}`);
       const res = await fetch("/api/course-activities");
       if (!res.ok) throw new Error("Failed to fetch data");
       const data = await res.json();
+      console.log("[DEBUG] Raw fetched activities from API:", data.activities);
       
       const newCourseMappings: CourseMapping[] = [];
       const newDocuments: DocumentItem[] = [];
@@ -282,11 +288,31 @@ export default function CourseActivityHubView() {
         } as any);
       });
 
+      console.log("[DEBUG] Reconstructed Course Mappings:", newCourseMappings);
+      console.log("[DEBUG] Reconstructed Document Mappings:", newDocumentMappings);
+
       setCourseMappings(newCourseMappings);
       setDocuments(newDocuments);
       setDocumentMappings(newDocumentMappings);
+
+      // Sync selectedMappingId with newly loaded courseMappings
+      const matchingMapping = newCourseMappings.find(
+        m => m.academicYear === targetYear && m.branch === targetBranch && m.semester === targetSemester
+      );
+      console.log("[DEBUG] Matching mapping lookup result:", matchingMapping);
+
+      if (matchingMapping) {
+        setSelectedMappingId(matchingMapping.id);
+        setInputCourseName(matchingMapping.courseName);
+        setInputCourseCode(matchingMapping.courseCode);
+      } else {
+        setSelectedMappingId("");
+        setInputCourseName("");
+        setInputCourseCode("");
+      }
+
     } catch (err) {
-      console.error("Error fetching course activities:", err);
+      console.error("[DEBUG] Error fetching course activities:", err);
     } finally {
       setIsLoadingData(false);
     }
