@@ -561,7 +561,7 @@ export const handleExportGeneralizedWord = (data: GeneralizedCvWordData) => {
                 <th style="${WORD_COLUMN}width:8%;">Sr. No</th>
                 <th style="${WORD_COLUMN}width:15%;">Academic Year</th>
                 <th style="${WORD_COLUMN}width:25%;">Activity Type</th>
-                <th style="${WORD_COLUMN}width:52%;">Uploaded Details</th>
+                <th style="${WORD_COLUMN}width:52%;">Details</th>
               </tr>
               ${group.items
                 .map(
@@ -682,7 +682,7 @@ export const handleExportGeneralizedWord = (data: GeneralizedCvWordData) => {
   const page2Content = `
     <h1 style="${WORD_TITLE}">Somaiya Vidyavihar University</h1>
     <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
-      ${wordSectionTitle("All Uploaded Faculty Activities", 4)}
+      ${wordSectionTitle("Accomplishments and Projects", 4)}
     </table>
     ${activityTables}
     <table border="0" cellspacing="0" cellpadding="0" width="100%" style="width:100%;margin-top:18px;border-collapse:collapse;${WORD_FONT}font-size:10.5pt;font-weight:bold;">

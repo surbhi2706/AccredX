@@ -34,14 +34,36 @@ const humanizeKey = (key: string) =>
 const getActivityFieldLabel = (activityType: string, key: string) =>
   activityFields[activityType]?.find((field) => field.name === key)?.label || humanizeKey(key);
 
-const formatActivityDetails = (activity: SavedActivity) => {
-  const details = Object.entries(activity.data || {})
-    .filter(([, val]) => String(val || "").trim())
-    .map(([key, val]) => `${getActivityFieldLabel(activity.activityType, key)}: ${val}`);
+const GENERALIZED_CV_CATEGORIES = [
+  "Teaching, Learning & Evaluation",
+  "Research & Academic Contributions",
+  "Institution Building & Professional Development",
+  "Skill Enhancement & Miscellaneous",
+] as const;
 
-  if (activity.evidenceFileName) {
-    details.push(`Evidence: ${activity.evidenceFileName}`);
-  }
+const DETAIL_FIELD_LIMIT = 4;
+const EXCLUDED_DETAIL_KEYS = new Set([
+  "detailedActivity",
+  "pmsSection",
+  "nbaCriterion",
+  "nbaSubCriterion",
+  "selfAssessedMarks",
+]);
+
+const formatActivityDetails = (activity: SavedActivity) => {
+  const data = activity.data || {};
+  const fieldOrder = activityFields[activity.activityType]?.map((field) => field.name) || [];
+  const orderedKeys = [
+    ...fieldOrder,
+    ...Object.keys(data).filter((key) => !fieldOrder.includes(key)),
+  ];
+
+  const details = orderedKeys
+    .filter((key, index, keys) => keys.indexOf(key) === index)
+    .filter((key) => !EXCLUDED_DETAIL_KEYS.has(key))
+    .filter((key) => String(data[key] || "").trim())
+    .slice(0, DETAIL_FIELD_LIMIT)
+    .map((key) => `${getActivityFieldLabel(activity.activityType, key)}: ${data[key]}`);
 
   return details.length > 0 ? details : ["No additional details uploaded."];
 };
@@ -49,19 +71,23 @@ const formatActivityDetails = (activity: SavedActivity) => {
 const groupActivities = (activities: SavedActivity[]) => {
   const groups = new Map<string, SavedActivity[]>();
 
-  activities.forEach((activity) => {
-    const groupName = activity.pmsCategory || "Other Activities";
-    groups.set(groupName, [...(groups.get(groupName) || []), activity]);
-  });
+  activities
+    .filter((activity) => GENERALIZED_CV_CATEGORIES.includes(activity.pmsCategory as typeof GENERALIZED_CV_CATEGORIES[number]))
+    .forEach((activity) => {
+      const groupName = activity.pmsCategory;
+      groups.set(groupName, [...(groups.get(groupName) || []), activity]);
+    });
 
-  return Array.from(groups.entries()).map(([title, items]) => ({
-    title,
-    items: [...items].sort((a, b) => {
-      const yearCompare = b.academicYear.localeCompare(a.academicYear);
-      if (yearCompare !== 0) return yearCompare;
-      return a.activityType.localeCompare(b.activityType);
-    }),
-  }));
+  return GENERALIZED_CV_CATEGORIES
+    .filter((title) => groups.has(title))
+    .map((title) => ({
+      title,
+      items: [...(groups.get(title) || [])].sort((a, b) => {
+        const yearCompare = b.academicYear.localeCompare(a.academicYear);
+        if (yearCompare !== 0) return yearCompare;
+        return a.activityType.localeCompare(b.activityType);
+      }),
+    }));
 };
 
 // Editable cell component that updates parent state on blur to avoid cursor jumps
@@ -1394,7 +1420,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
                   <thead>
                     <tr>
                       <th colSpan={4} className="text-center font-bold text-[11pt]" style={{ backgroundColor: "#f3f4f6" }}>
-                        All Uploaded Faculty Activities
+                        Accomplishments and Projects
                       </th>
                     </tr>
                   </thead>
@@ -1421,7 +1447,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
                           <th style={{ width: "8%" }}><strong>Sr. No</strong></th>
                           <th style={{ width: "15%" }}><strong>Academic Year</strong></th>
                           <th style={{ width: "25%" }}><strong>Activity Type</strong></th>
-                          <th style={{ width: "52%" }}><strong>Uploaded Details</strong></th>
+                          <th style={{ width: "52%" }}><strong>Details</strong></th>
                         </tr>
                       </thead>
                       <tbody>
