@@ -50,6 +50,75 @@ const EXCLUDED_DETAIL_KEYS = new Set([
   "selfAssessedMarks",
 ]);
 
+const DATE_PRIORITY_KEYS = [
+  "date",
+  "endDate",
+  "completionDate",
+  "publicationDate",
+  "grantDate",
+  "registrationDate",
+  "filingDate",
+  "startDate",
+  "academicYear",
+  "publicationYear",
+  "year",
+  "implementationYear",
+];
+
+const parseDateScore = (rawValue?: string) => {
+  const value = String(rawValue || "").trim();
+  if (!value) return 0;
+
+  const academicYearMatch = value.match(/\b((?:19|20)\d{2})\s*[-/]\s*(\d{2}|(?:19|20)\d{2})\b/);
+  if (academicYearMatch) {
+    const startYear = Number(academicYearMatch[1]);
+    const rawEndYear = academicYearMatch[2];
+    const endYear = rawEndYear.length === 2
+      ? Math.floor(startYear / 100) * 100 + Number(rawEndYear)
+      : Number(rawEndYear);
+    return new Date(endYear, 11, 31).getTime();
+  }
+
+  const dayFirstMatch = value.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
+  if (dayFirstMatch) {
+    const [, day, month, year] = dayFirstMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+  }
+
+  const parsedDate = Date.parse(value);
+  if (!Number.isNaN(parsedDate)) return parsedDate;
+
+  const years = Array.from(value.matchAll(/\b(19|20)\d{2}\b/g)).map((match) => Number(match[0]));
+  if (years.length > 0) {
+    return new Date(Math.max(...years), 11, 31).getTime();
+  }
+
+  return 0;
+};
+
+const getActivityDateScore = (activity: SavedActivity) => {
+  const data = activity.data || {};
+  const preferredScores = DATE_PRIORITY_KEYS.map((key) => parseDateScore(data[key]));
+  const otherDateScores = Object.entries(data)
+    .filter(([key]) => key.toLowerCase().includes("date") || key.toLowerCase().includes("year"))
+    .map(([, val]) => parseDateScore(val));
+
+  return Math.max(
+    parseDateScore(activity.academicYear),
+    ...preferredScores,
+    ...otherDateScores,
+    parseDateScore(activity.createdAt),
+    0
+  );
+};
+
+const sortActivitiesByLatestWork = (activities: SavedActivity[]) =>
+  [...activities].sort((a, b) => {
+    const dateCompare = getActivityDateScore(b) - getActivityDateScore(a);
+    if (dateCompare !== 0) return dateCompare;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+
 const formatActivityDetails = (activity: SavedActivity) => {
   const data = activity.data || {};
   const fieldOrder = activityFields[activity.activityType]?.map((field) => field.name) || [];
@@ -82,11 +151,7 @@ const groupActivities = (activities: SavedActivity[]) => {
     .filter((title) => groups.has(title))
     .map((title) => ({
       title,
-      items: [...(groups.get(title) || [])].sort((a, b) => {
-        const yearCompare = b.academicYear.localeCompare(a.academicYear);
-        if (yearCompare !== 0) return yearCompare;
-        return a.activityType.localeCompare(b.activityType);
-      }),
+      items: sortActivitiesByLatestWork(groups.get(title) || []),
     }));
 };
 
@@ -348,6 +413,8 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
 
   useEffect(() => {
     if (activities && activities.length > 0) {
+      const sortedActivities = sortActivitiesByLatestWork(activities);
+
       // 1. Research domains: collect "researchArea" or "domain" fields
       const areas: string[] = [];
       // 2. Courses delivered: collect "courseName", "subjectName", "courseTitle"
@@ -392,7 +459,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
       let completedPG = 0;
       let completedUG = 0;
 
-      activities.forEach((act) => {
+      sortedActivities.forEach((act) => {
         const type = act.activityType.toLowerCase();
         const cat = act.pmsCategory.toLowerCase();
         const data = act.data || {};
@@ -710,17 +777,10 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
               <h2 className="text-lg font-black text-gray-900 font-sans">
                 {modalTitle}
               </h2>
-              <p className="text-xs font-semibold text-gray-505 font-sans">
-                Interactive Print-ready Layout (Dashed outline indicates editable text)
-              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="text-xs text-gray-500 font-sans italic">
-              Profile information is automatically synced.
-            </div>
-
             <button
               onClick={() => {
                 const nameStr = profileInfo.name
@@ -787,8 +847,6 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
               <Icon name="file" className="h-4 w-4" />
               Export Word
             </button>
-
-            <span className="h-6 w-px bg-gray-200 mx-1"></span>
 
             <button
               onClick={onClose}
