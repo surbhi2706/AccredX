@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/Icon";
 import type { FacultyProfile, EducationEntry } from "@/types/profile";
-import { handleExportReport, handleExportWord } from "@/utils/export";
+import { activityFields } from "@/data/formFields";
+import { handleExportGeneralizedWord, handleExportReport, handleExportWord } from "@/utils/export";
 
 type SavedActivity = {
   id: number;
@@ -19,6 +20,48 @@ type CvPreviewModalProps = {
   profile: FacultyProfile | null;
   activities: SavedActivity[];
   onClose: () => void;
+  variant?: "standard" | "generalized";
+};
+
+const humanizeKey = (key: string) =>
+  key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+
+const getActivityFieldLabel = (activityType: string, key: string) =>
+  activityFields[activityType]?.find((field) => field.name === key)?.label || humanizeKey(key);
+
+const formatActivityDetails = (activity: SavedActivity) => {
+  const details = Object.entries(activity.data || {})
+    .filter(([, val]) => String(val || "").trim())
+    .map(([key, val]) => `${getActivityFieldLabel(activity.activityType, key)}: ${val}`);
+
+  if (activity.evidenceFileName) {
+    details.push(`Evidence: ${activity.evidenceFileName}`);
+  }
+
+  return details.length > 0 ? details : ["No additional details uploaded."];
+};
+
+const groupActivities = (activities: SavedActivity[]) => {
+  const groups = new Map<string, SavedActivity[]>();
+
+  activities.forEach((activity) => {
+    const groupName = activity.pmsCategory || "Other Activities";
+    groups.set(groupName, [...(groups.get(groupName) || []), activity]);
+  });
+
+  return Array.from(groups.entries()).map(([title, items]) => ({
+    title,
+    items: [...items].sort((a, b) => {
+      const yearCompare = b.academicYear.localeCompare(a.academicYear);
+      if (yearCompare !== 0) return yearCompare;
+      return a.activityType.localeCompare(b.activityType);
+    }),
+  }));
 };
 
 // Editable cell component that updates parent state on blur to avoid cursor jumps
@@ -104,7 +147,7 @@ const EditableList = ({
   );
 };
 
-export default function CvPreviewModal({ profile, activities, onClose }: CvPreviewModalProps) {
+export default function CvPreviewModal({ profile, activities, onClose, variant = "standard" }: CvPreviewModalProps) {
 
   // States for CV preview (editable)
   const [profileInfo, setProfileInfo] = useState({
@@ -537,6 +580,11 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
     setPositionsResponsibility(positionsResponsibility.filter((_, i) => i !== index));
   };
 
+  const isGeneralized = variant === "generalized";
+  const modalTitle = isGeneralized ? "Somaiya Faculty CV (Generalized)" : "Somaiya Faculty CV";
+  const exportReportType = isGeneralized ? "Somaiya CV (Generalized)" : "Somaiya CV";
+  const generalizedActivityGroups = groupActivities(activities);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 print:absolute print:inset-0 print:bg-transparent print:p-0 print:backdrop-blur-none print:block print:w-full print:h-auto print:static">
       <style>{`
@@ -565,6 +613,11 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
           }
           .cv-page:last-child {
             page-break-after: avoid !important;
+          }
+          .cv-flow-page {
+            height: auto !important;
+            min-height: 297mm !important;
+            page-break-inside: auto !important;
           }
           .cv-red-stripe {
             position: absolute !important;
@@ -629,7 +682,7 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
             </span>
             <div>
               <h2 className="text-lg font-black text-gray-900 font-sans">
-                Somaiya Faculty CV
+                {modalTitle}
               </h2>
               <p className="text-xs font-semibold text-gray-505 font-sans">
                 Interactive Print-ready Layout (Dashed outline indicates editable text)
@@ -647,7 +700,7 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                 const nameStr = profileInfo.name
                   ? profileInfo.name.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
                   : "Faculty";
-                handleExportReport("Somaiya CV", `${nameStr}_CV`);
+                handleExportReport(exportReportType, `${nameStr}_${isGeneralized ? "Generalized_CV" : "CV"}`);
               }}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-150 transition hover:bg-red-700 font-sans"
@@ -661,8 +714,8 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                 const nameStr = profileInfo.name
                   ? profileInfo.name.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
                   : "Faculty";
-                handleExportWord({
-                  fileName: `${nameStr}_CV`,
+                const baseWordData = {
+                  fileName: `${nameStr}_${isGeneralized ? "Generalized_CV" : "CV"}`,
                   profileInfo,
                   researchAreas,
                   coursesDelivered,
@@ -672,17 +725,35 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                   recognitions,
                   educationHistory,
                   notableExperience,
-                  researchAccomplishments,
-                  detailsPublications,
-                  researchProjects,
-                  iprCopyrights,
-                  fdpAttended,
-                  fdpOrganized,
-                  fdpDelivered,
-                  keyAchievements,
-                  positionsResponsibility,
                   cvDate,
-                });
+                };
+
+                if (isGeneralized) {
+                  handleExportGeneralizedWord({
+                    ...baseWordData,
+                    activities: generalizedActivityGroups.map((group) => ({
+                      title: group.title,
+                      items: group.items.map((activity) => ({
+                        academicYear: activity.academicYear,
+                        activityType: activity.activityType,
+                        details: formatActivityDetails(activity),
+                      })),
+                    })),
+                  });
+                } else {
+                  handleExportWord({
+                    ...baseWordData,
+                    researchAccomplishments,
+                    detailsPublications,
+                    researchProjects,
+                    iprCopyrights,
+                    fdpAttended,
+                    fdpOrganized,
+                    fdpDelivered,
+                    keyAchievements,
+                    positionsResponsibility,
+                  });
+                }
               }}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-black text-red-700 shadow-sm transition hover:bg-red-50 font-sans"
@@ -978,6 +1049,8 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                 + Add Experience Row
               </button>
 
+              {!isGeneralized && (
+              <>
               {/* Research accomplishments part 1 */}
               <table className="cv-table">
                 <thead>
@@ -1037,8 +1110,12 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                   </tr>
                 </tbody>
               </table>
+              </>
+              )}
             </div>
 
+            {!isGeneralized && (
+            <>
             {/* ================= PAGE 2 ================= */}
             <div className="cv-page">
               <div className="cv-red-stripe"></div>
@@ -1302,6 +1379,82 @@ export default function CvPreviewModal({ profile, activities, onClose }: CvPrevi
                 </div>
               </div>
             </div>
+            </>
+            )}
+
+            {isGeneralized && (
+              <div className="cv-page cv-flow-page">
+                <div className="cv-red-stripe"></div>
+                
+                <h1 className="text-center text-xl font-bold tracking-wide font-serif mb-3 uppercase text-black pt-2">
+                  Somaiya Vidyavihar University
+                </h1>
+
+                <table className="cv-table">
+                  <thead>
+                    <tr>
+                      <th colSpan={4} className="text-center font-bold text-[11pt]" style={{ backgroundColor: "#f3f4f6" }}>
+                        All Uploaded Faculty Activities
+                      </th>
+                    </tr>
+                  </thead>
+                </table>
+
+                {generalizedActivityGroups.length === 0 ? (
+                  <table className="cv-table">
+                    <tbody>
+                      <tr>
+                        <td className="text-center font-bold">No uploaded activities found.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  generalizedActivityGroups.map((group) => (
+                    <table className="cv-table" key={group.title}>
+                      <thead>
+                        <tr>
+                          <th colSpan={4} className="text-center font-bold text-[10.5pt]" style={{ backgroundColor: "#f3f4f6" }}>
+                            {group.title}
+                          </th>
+                        </tr>
+                        <tr style={{ backgroundColor: "#fafafa" }}>
+                          <th style={{ width: "8%" }}><strong>Sr. No</strong></th>
+                          <th style={{ width: "15%" }}><strong>Academic Year</strong></th>
+                          <th style={{ width: "25%" }}><strong>Activity Type</strong></th>
+                          <th style={{ width: "52%" }}><strong>Uploaded Details</strong></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {group.items.map((activity, idx) => (
+                          <tr key={activity.id}>
+                            <td className="text-center"><strong>{idx + 1}.</strong></td>
+                            <td className="text-center">{activity.academicYear}</td>
+                            <td><strong>{activity.activityType}</strong></td>
+                            <td>
+                              <ol className="list-decimal pl-5 space-y-1 text-[9.5pt]">
+                                {formatActivityDetails(activity).map((detail, detailIdx) => (
+                                  <li key={`${activity.id}-${detailIdx}`}>{detail}</li>
+                                ))}
+                              </ol>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ))
+                )}
+
+                <div className="mt-6 flex justify-between items-center text-sm font-bold font-serif px-2">
+                  <div className="flex items-center gap-1">
+                    <span>Date:</span>
+                    <EditableCell className="min-w-[120px]" value={cvDate} onChange={setCvDate} />
+                  </div>
+                  <div>
+                    Signature of Faculty Member
+                  </div>
+                </div>
+              </div>
+            )}
 
           </div>
         </div>

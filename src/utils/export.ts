@@ -78,6 +78,28 @@ type SomaiyaCvWordData = {
   cvDate: string;
 };
 
+type GeneralizedCvWordData = {
+  fileName: string;
+  profileInfo: CvProfileInfo;
+  researchAreas: string[];
+  coursesDelivered: string[];
+  teacherUG: string;
+  teacherPG: string;
+  teacherPhD: string;
+  recognitions: string[];
+  educationHistory: EducationEntry[];
+  notableExperience: ExperienceEntry[];
+  cvDate: string;
+  activities: Array<{
+    title: string;
+    items: Array<{
+      academicYear: string;
+      activityType: string;
+      details: string[];
+    }>;
+  }>;
+};
+
 const sanitizeFileName = (fileName: string) =>
   fileName
     .trim()
@@ -447,6 +469,236 @@ export const handleExportWord = (data: SomaiyaCvWordData) => {
       <head>
         <meta charset="utf-8" />
         <title>Somaiya Faculty CV</title>
+        <!--[if gte mso 9]>
+        <xml>
+          <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForBrowser />
+          </w:WordDocument>
+        </xml>
+        <![endif]-->
+        <style>${wordStyles}</style>
+      </head>
+      <body>
+        <div class="Section1">
+          ${wordDocumentShell(page1Content, true)}
+        </div>
+        ${wordPageBreak()}
+        <div class="Section1">
+          ${wordDocumentShell(page2Content)}
+        </div>
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+  const downloadUrl = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = downloadUrl;
+  link.download = `${sanitizeFileName(fileName)}.doc`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(downloadUrl);
+};
+
+export const handleExportGeneralizedWord = (data: GeneralizedCvWordData) => {
+  const {
+    fileName,
+    profileInfo,
+    researchAreas,
+    coursesDelivered,
+    teacherUG,
+    teacherPG,
+    teacherPhD,
+    recognitions,
+    educationHistory,
+    notableExperience,
+    cvDate,
+    activities,
+  } = data;
+
+  const bold = (text: string) => `<b>${text}</b>`;
+
+  const educationRows = educationHistory
+    .map(
+      (edu) => `
+        <tr>
+          <td style="${WORD_CELL}"><b>${value(edu.examination)}</b></td>
+          <td style="${WORD_CELL}">${value(edu.degree)}</td>
+          <td style="${WORD_CELL}">${value(edu.university)}</td>
+          <td style="${WORD_CELL}">${value(edu.institute)}</td>
+          <td style="${WORD_CELL}text-align:center;">${value(edu.yearOfPassing)}</td>
+          <td style="${WORD_CELL}text-align:center;">${value(edu.cgpaOrPercentage)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const experienceRows = notableExperience
+    .map(
+      (exp, index) => `
+        <tr>
+          <td style="${WORD_CELL}text-align:center;"><b>${index + 1}.</b></td>
+          <td style="${WORD_CELL}">${value(exp.organization)}</td>
+          <td style="${WORD_CELL}">${value(exp.designation)}</td>
+          <td style="${WORD_CELL}text-align:center;">${value(exp.doj)}</td>
+          <td style="${WORD_CELL}text-align:center;">${value(exp.dol)}</td>
+          <td style="${WORD_CELL}text-align:center;">${value(exp.years)}</td>
+        </tr>
+      `
+    )
+    .join("");
+
+  const activityTables = activities.length
+    ? activities
+        .map(
+          (group) => `
+            <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+              ${wordSectionTitle(group.title, 4)}
+              <tr>
+                <th style="${WORD_COLUMN}width:8%;">Sr. No</th>
+                <th style="${WORD_COLUMN}width:15%;">Academic Year</th>
+                <th style="${WORD_COLUMN}width:25%;">Activity Type</th>
+                <th style="${WORD_COLUMN}width:52%;">Uploaded Details</th>
+              </tr>
+              ${group.items
+                .map(
+                  (activity, index) => `
+                    <tr>
+                      <td style="${WORD_CELL}text-align:center;"><b>${index + 1}.</b></td>
+                      <td style="${WORD_CELL}text-align:center;">${value(activity.academicYear)}</td>
+                      <td style="${WORD_CELL}"><b>${value(activity.activityType)}</b></td>
+                      <td style="${WORD_CELL}">${wordNumberedList(activity.details)}</td>
+                    </tr>
+                  `
+                )
+                .join("")}
+            </table>
+          `
+        )
+        .join("")
+    : `<table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}"><tr><td style="${WORD_CELL}text-align:center;"><b>No uploaded activities found.</b></td></tr></table>`;
+
+  const page1Content = `
+    <h1 style="${WORD_TITLE}">Somaiya Vidyavihar University</h1>
+
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      <tr>
+        <td style="${WORD_CELL}width:60%;">${bold("Name:")} ${value(profileInfo.name)}</td>
+        <td style="${WORD_CELL}width:40%;">${bold("E-mail:")} ${value(profileInfo.email)}</td>
+      </tr>
+      <tr><td colspan="2" style="${WORD_CELL}">${bold("Contact No:")} ${value(profileInfo.contact)}</td></tr>
+      <tr><td colspan="2" style="${WORD_CELL}">${bold("Department/Section:")} ${value(profileInfo.department)}</td></tr>
+      <tr><td colspan="2" style="${WORD_CELL}">${bold("College:")} ${value(profileInfo.college)}</td></tr>
+      <tr>
+        <td colspan="2" style="${WORD_CELL}">
+          ${bold("DOJ Somaiya:")} ${value(profileInfo.doj)}
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          ${bold("Career Experience:")} ${value(profileInfo.careerExp)} Yrs
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          ${bold("Industry Experience:")} ${value(profileInfo.industryExp)} Yrs
+          &nbsp;&nbsp;&nbsp;&nbsp;
+          ${bold("Teaching Experience:")} ${value(profileInfo.teachingExp)} Yrs
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="${WORD_CELL}padding:8px 10px;">
+          <table border="0" cellspacing="0" cellpadding="0" width="100%" style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td width="50%" style="border:none;padding:0 8px 0 0;vertical-align:top;${WORD_FONT}font-size:9.8pt;">
+                <p>${bold("Present Academic Designation:")}</p>
+                <p style="${WORD_MUTED}">(Professor/Associate Professor/Assistant Professor)</p>
+                <p><b>${value(profileInfo.designationAcademic)}</b></p>
+              </td>
+              <td width="50%" style="border:none;border-left:1px solid #000;padding:0 0 0 16px;vertical-align:top;${WORD_FONT}font-size:9.8pt;">
+                <p>${bold("Present Administrative Designation:")}</p>
+                <p style="${WORD_MUTED}">(Principal/Vice-Principal/ Associate Dean/ HOD etc)</p>
+                <p><b>${value(profileInfo.designationAdmin)}</b></p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      ${wordSectionTitle("Area of research/specialization and Courses Delivered", 2)}
+      <tr>
+        <td style="${WORD_CELL}width:50%;padding:10px;">
+          <p>${bold("Research domain/interests/areas")}</p>
+          ${wordNumberedList(researchAreas)}
+        </td>
+        <td style="${WORD_CELL}width:50%;padding:10px;">
+          <p>${bold("Courses Delivered")}</p>
+          ${wordNumberedList(coursesDelivered)}
+        </td>
+      </tr>
+    </table>
+
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      <tr>
+        <td style="${WORD_CELL}width:55%;">${bold("Recognition as a teacher by any University")}</td>
+        <td style="${WORD_CELL}width:15%;">${bold("UG:")} ${value(teacherUG)}</td>
+        <td style="${WORD_CELL}width:15%;">${bold("PG:")} ${value(teacherPG)}</td>
+        <td style="${WORD_CELL}width:15%;">${bold("Ph.D :")} ${value(teacherPhD)}</td>
+      </tr>
+      <tr>
+        <td colspan="4" style="${WORD_CELL}padding:8px 10px;">
+          <p>${bold("Details of Recognitions")}</p>
+          ${wordNumberedList(recognitions)}
+        </td>
+      </tr>
+    </table>
+
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      ${wordSectionTitle("Education", 6)}
+      <tr>
+        <th style="${WORD_COLUMN}width:16%;">Examination</th>
+        <th style="${WORD_COLUMN}width:23%;">Name of the Degree</th>
+        <th style="${WORD_COLUMN}width:23%;">University/Board</th>
+        <th style="${WORD_COLUMN}width:20%;">Institute/College</th>
+        <th style="${WORD_COLUMN}width:10%;">Year</th>
+        <th style="${WORD_COLUMN}width:8%;">CPI/SPI/%Marks</th>
+      </tr>
+      ${educationRows}
+    </table>
+
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      ${wordSectionTitle("Notable Experience Details", 6)}
+      <tr>
+        <th style="${WORD_COLUMN}width:8%;">Sr. No</th>
+        <th style="${WORD_COLUMN}width:35%;">Name of the organization</th>
+        <th style="${WORD_COLUMN}width:23%;">Designation</th>
+        <th style="${WORD_COLUMN}width:12%;">Date of Joining</th>
+        <th style="${WORD_COLUMN}width:12%;">Date of Leaving</th>
+        <th style="${WORD_COLUMN}width:10%;">Experience (Years)</th>
+      </tr>
+      ${experienceRows}
+    </table>
+  `;
+
+  const page2Content = `
+    <h1 style="${WORD_TITLE}">Somaiya Vidyavihar University</h1>
+    <table border="1" cellspacing="0" cellpadding="0" style="${WORD_TABLE}">
+      ${wordSectionTitle("All Uploaded Faculty Activities", 4)}
+    </table>
+    ${activityTables}
+    <table border="0" cellspacing="0" cellpadding="0" width="100%" style="width:100%;margin-top:18px;border-collapse:collapse;${WORD_FONT}font-size:10.5pt;font-weight:bold;">
+      <tr>
+        <td style="border:none;padding:0 8px;width:50%;">Date: ${value(cvDate)}</td>
+        <td style="border:none;padding:0 8px;width:50%;text-align:right;">Signature of Faculty Member</td>
+      </tr>
+    </table>
+  `;
+
+  const html = `
+    <!DOCTYPE html>
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <title>Somaiya Faculty CV (Generalized)</title>
         <!--[if gte mso 9]>
         <xml>
           <w:WordDocument>

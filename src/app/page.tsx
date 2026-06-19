@@ -77,7 +77,7 @@ type SavedActivity = {
 
 export default function Home() {
   const [previewReportType, setPreviewReportType] = useState<
-    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | null
+    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | null
   >(null);
 
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
@@ -455,7 +455,7 @@ export default function Home() {
         </main>
       </div>
 
-      {previewReportType && previewReportType !== "Somaiya CV" && (
+      {previewReportType && previewReportType !== "Somaiya CV" && previewReportType !== "Somaiya CV (Generalized)" && (
         <ReportPreviewModal
           reportType={previewReportType}
           activities={savedActivities}
@@ -464,10 +464,11 @@ export default function Home() {
         />
       )}
 
-      {previewReportType === "Somaiya CV" && (
+      {(previewReportType === "Somaiya CV" || previewReportType === "Somaiya CV (Generalized)") && (
         <CvPreviewModal
           profile={savedProfile}
           activities={savedActivities}
+          variant={previewReportType === "Somaiya CV (Generalized)" ? "generalized" : "standard"}
           onClose={() => setPreviewReportType(null)}
         />
       )}
@@ -834,13 +835,14 @@ function ReportsView({
 }: {
   activities: SavedActivity[];
   evidenceUploads: number;
-  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV") => void;
+  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)") => void;
 }) {
   const reportCards = [
     { title: "PMS Report", icon: "layers", color: "text-red-600 bg-red-50" },
     { title: "NBA Summary", icon: "award", color: "text-amber-600 bg-amber-50" },
     { title: "Annual Report", icon: "chart", color: "text-violet-650 bg-violet-50" },
     { title: "Somaiya CV", icon: "file", color: "text-sky-600 bg-sky-50" },
+    { title: "Somaiya CV (Generalized)", icon: "clipboard", color: "text-emerald-600 bg-emerald-50" },
   ] as const;
 
   return (
