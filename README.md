@@ -145,31 +145,36 @@ accredx/
 <details>
 <summary><b>Dashboard</b></summary>
 <br>
-<i>![Dashboard Placeholder](https://via.placeholder.com/800x450.png?text=Dashboard+Screenshot)</i>
+<i>!<img width="959" height="439" alt="image" src="https://github.com/user-attachments/assets/bf7f9b54-751e-4022-a9b5-0344dfbdbee8" />
+</i>
 </details>
 
 <details>
 <summary><b>Course Activity Hub</b></summary>
 <br>
-<i>![Course Activity Placeholder](https://via.placeholder.com/800x450.png?text=Course+Activity+Hub+Screenshot)</i>
+<i>!<img width="959" height="438" alt="image" src="https://github.com/user-attachments/assets/632e6e32-ef65-4ab7-8997-9a3d5e3e121b" />
+</i>
 </details>
 
 <details>
 <summary><b>Timeline View</b></summary>
 <br>
-<i>![Timeline Placeholder](https://via.placeholder.com/800x450.png?text=Timeline+Screenshot)</i>
+<i>!<img width="959" height="439" alt="image" src="https://github.com/user-attachments/assets/0c64d085-733c-4392-a939-ad8692b572ba" />
+</i>
 </details>
 
 <details>
 <summary><b>Automated Reports</b></summary>
 <br>
-<i>![Reports Placeholder](https://via.placeholder.com/800x450.png?text=Reports+Screenshot)</i>
+<i>!<img width="959" height="439" alt="image" src="https://github.com/user-attachments/assets/baa1288d-5c9d-4dfe-a471-a02b4379cd81" />
+</i>
 </details>
 
 <details>
 <summary><b>Somaiya CV Preview</b></summary>
 <br>
-<i>![Somaiya CV Placeholder](https://via.placeholder.com/800x450.png?text=Somaiya+CV+Screenshot)</i>
+<i>!<img width="959" height="440" alt="image" src="https://github.com/user-attachments/assets/f11493dd-e7a5-4171-9be6-6ec7d05c4104" />
+</i>
 </details>
 
 ---
