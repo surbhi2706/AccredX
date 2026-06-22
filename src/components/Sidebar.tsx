@@ -15,18 +15,20 @@ type SidebarProps = {
   onNavigate: (view: ViewId) => void;
   user: UserProfile;
   onLogout: () => void;
+  isAdmin?: boolean;
 };
 
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: "grid", color: "text-sky-600 bg-sky-50" },
   { id: "add-activity", label: "Add Activity", icon: "plus", color: "text-red-600 bg-red-50" },
+  { id: "my-activities", label: "My Activities", icon: "clipboard", color: "text-emerald-600 bg-emerald-50" },
   { id: "reports", label: "Reports", icon: "chart", color: "text-violet-600 bg-violet-50" },
   { id: "profile", label: "Profile", icon: "user", color: "text-amber-600 bg-amber-50" },
   { id: "timeline", label: "Timeline", icon: "history", color: "text-indigo-600 bg-indigo-50" },
   { id: "course-activity-hub", label: "Course Activity Hub", icon: "book", color: "text-rose-650 bg-rose-50" },
 ] as const;
 
-export default function Sidebar({ activeView, onNavigate, user, onLogout }: SidebarProps) {
+export default function Sidebar({ activeView, onNavigate, user, onLogout, isAdmin }: SidebarProps) {
   const initials = user.name
     ? user.name
         .split(" ")
@@ -80,6 +82,18 @@ export default function Sidebar({ activeView, onNavigate, user, onLogout }: Side
           );
         })}
       </nav>
+
+      {isAdmin && (
+        <a
+          href="/admin"
+          className="group mt-1.5 flex w-full items-center gap-3 rounded-xl border border-dashed border-red-200 px-3.5 py-3 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-red-50 text-red-600">
+            <Icon name="shield" className="h-4.5 w-4.5" />
+          </span>
+          Admin Dashboard
+        </a>
+      )}
 
       {/* Faculty Profile & Compliance Status Widget */}
       <div className="mt-auto border-t border-red-100/60 pt-5 space-y-4">

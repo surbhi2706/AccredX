@@ -20,7 +20,7 @@ type TimelineViewProps = {
 };
 
 type DocumentRecord = {
-  id: number;
+  id: string;
   name: string;
   uploadDate: string;
   timestamp: number;
@@ -67,7 +67,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2024-25",
     isMock: true,
-    branch: "Artificial Intelligence & Data Science (AIDS)",
+    branch: "Artificial Intelligence and Data Science (AIDS)",
   },
   {
     id: 202,
@@ -89,7 +89,7 @@ const mockDocuments: DocumentRecord[] = [
     fileType: "PDF",
     academicYear: "2023-24",
     isMock: true,
-    branch: "Computer and Communication Systems (CCS)",
+    branch: "Computer and Communication Engineering (CCE)",
   },
   {
     id: 302,
@@ -116,7 +116,7 @@ export default function TimelineView({ activities }: TimelineViewProps) {
       id: act.id,
       name: act.evidenceFileName,
       uploadDate: act.createdAt,
-      timestamp: act.id, // Timestamp of session upload
+      timestamp: Date.parse(act.id) || 0,// Timestamp of session upload
       category: act.pmsCategory,
       fileType: act.evidenceFileName.split(".").pop()?.toUpperCase() || "FILE",
       fileId: act.evidenceFileId,

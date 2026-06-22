@@ -3,11 +3,10 @@
 import { useState, useEffect } from "react";
 import Icon from "@/components/Icon";
 import type { FacultyProfile, EducationEntry } from "@/types/profile";
-import { activityFields } from "@/data/formFields";
-import { handleExportGeneralizedWord, handleExportReport, handleExportWord } from "@/utils/export";
+import { handleExportReport } from "@/utils/export";
 
 type SavedActivity = {
-  id: number;
+  id: string;
   academicYear: string;
   pmsCategory: string;
   activityType: string;
@@ -17,143 +16,11 @@ type SavedActivity = {
 };
 
 type CvPreviewModalProps = {
-  profile: FacultyProfile | null;
   activities: SavedActivity[];
   onClose: () => void;
-  variant?: "standard" | "generalized";
 };
 
-const humanizeKey = (key: string) =>
-  key
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-
-const getActivityFieldLabel = (activityType: string, key: string) =>
-  activityFields[activityType]?.find((field) => field.name === key)?.label || humanizeKey(key);
-
-const GENERALIZED_CV_CATEGORIES = [
-  "Teaching, Learning & Evaluation",
-  "Research & Academic Contributions",
-  "Institution Building & Professional Development",
-  "Skill Enhancement & Miscellaneous",
-] as const;
-
-const DETAIL_FIELD_LIMIT = 4;
-const EXCLUDED_DETAIL_KEYS = new Set([
-  "detailedActivity",
-  "pmsSection",
-  "nbaCriterion",
-  "nbaSubCriterion",
-  "selfAssessedMarks",
-]);
-
-const DATE_PRIORITY_KEYS = [
-  "date",
-  "endDate",
-  "completionDate",
-  "publicationDate",
-  "grantDate",
-  "registrationDate",
-  "filingDate",
-  "startDate",
-  "academicYear",
-  "publicationYear",
-  "year",
-  "implementationYear",
-];
-
-const parseDateScore = (rawValue?: string) => {
-  const value = String(rawValue || "").trim();
-  if (!value) return 0;
-
-  const academicYearMatch = value.match(/\b((?:19|20)\d{2})\s*[-/]\s*(\d{2}|(?:19|20)\d{2})\b/);
-  if (academicYearMatch) {
-    const startYear = Number(academicYearMatch[1]);
-    const rawEndYear = academicYearMatch[2];
-    const endYear = rawEndYear.length === 2
-      ? Math.floor(startYear / 100) * 100 + Number(rawEndYear)
-      : Number(rawEndYear);
-    return new Date(endYear, 11, 31).getTime();
-  }
-
-  const dayFirstMatch = value.match(/\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/);
-  if (dayFirstMatch) {
-    const [, day, month, year] = dayFirstMatch;
-    return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
-  }
-
-  const parsedDate = Date.parse(value);
-  if (!Number.isNaN(parsedDate)) return parsedDate;
-
-  const years = Array.from(value.matchAll(/\b(19|20)\d{2}\b/g)).map((match) => Number(match[0]));
-  if (years.length > 0) {
-    return new Date(Math.max(...years), 11, 31).getTime();
-  }
-
-  return 0;
-};
-
-const getActivityDateScore = (activity: SavedActivity) => {
-  const data = activity.data || {};
-  const preferredScores = DATE_PRIORITY_KEYS.map((key) => parseDateScore(data[key]));
-  const otherDateScores = Object.entries(data)
-    .filter(([key]) => key.toLowerCase().includes("date") || key.toLowerCase().includes("year"))
-    .map(([, val]) => parseDateScore(val));
-
-  return Math.max(
-    parseDateScore(activity.academicYear),
-    ...preferredScores,
-    ...otherDateScores,
-    parseDateScore(activity.createdAt),
-    0
-  );
-};
-
-const sortActivitiesByLatestWork = (activities: SavedActivity[]) =>
-  [...activities].sort((a, b) => {
-    const dateCompare = getActivityDateScore(b) - getActivityDateScore(a);
-    if (dateCompare !== 0) return dateCompare;
-    return b.createdAt.localeCompare(a.createdAt);
-  });
-
-const formatActivityDetails = (activity: SavedActivity) => {
-  const data = activity.data || {};
-  const fieldOrder = activityFields[activity.activityType]?.map((field) => field.name) || [];
-  const orderedKeys = [
-    ...fieldOrder,
-    ...Object.keys(data).filter((key) => !fieldOrder.includes(key)),
-  ];
-
-  const details = orderedKeys
-    .filter((key, index, keys) => keys.indexOf(key) === index)
-    .filter((key) => !EXCLUDED_DETAIL_KEYS.has(key))
-    .filter((key) => String(data[key] || "").trim())
-    .slice(0, DETAIL_FIELD_LIMIT)
-    .map((key) => `${getActivityFieldLabel(activity.activityType, key)}: ${data[key]}`);
-
-  return details.length > 0 ? details : ["No additional details uploaded."];
-};
-
-const groupActivities = (activities: SavedActivity[]) => {
-  const groups = new Map<string, SavedActivity[]>();
-
-  activities
-    .filter((activity) => GENERALIZED_CV_CATEGORIES.includes(activity.pmsCategory as typeof GENERALIZED_CV_CATEGORIES[number]))
-    .forEach((activity) => {
-      const groupName = activity.pmsCategory;
-      groups.set(groupName, [...(groups.get(groupName) || []), activity]);
-    });
-
-  return GENERALIZED_CV_CATEGORIES
-    .filter((title) => groups.has(title))
-    .map((title) => ({
-      title,
-      items: sortActivitiesByLatestWork(groups.get(title) || []),
-    }));
-};
+const STORAGE_KEY = "accredx_faculty_profile";
 
 // Editable cell component that updates parent state on blur to avoid cursor jumps
 const EditableCell = ({
@@ -238,21 +105,22 @@ const EditableList = ({
   );
 };
 
-export default function CvPreviewModal({ profile, activities, onClose, variant = "standard" }: CvPreviewModalProps) {
+export default function CvPreviewModal({ activities, onClose }: CvPreviewModalProps) {
+  const [profile, setProfile] = useState<FacultyProfile | null>(null);
 
   // States for CV preview (editable)
   const [profileInfo, setProfileInfo] = useState({
-    name: "",
-    email: "",
-    contact: "",
-    department: "",
-    college: "",
+    name: "Faculty Name",
+    email: "email@somaiya.edu",
+    contact: "Phone Number",
+    department: "Department",
+    college: "K J Somaiya College of Engineering",
     doj: "",
     careerExp: "",
     industryExp: "",
     teachingExp: "",
-    designationAcademic: "",
-    designationAdmin: "",
+    designationAcademic: "Assistant Professor",
+    designationAdmin: "—",
   });
 
   const [researchAreas, setResearchAreas] = useState<string[]>([
@@ -346,75 +214,85 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
   });
 
   useEffect(() => {
-    if (profile) {
-      setProfileInfo({
-        name: profile.fullName || "",
-        email: profile.officialEmail || "",
-        contact: profile.phoneNumber || "",
-        department: profile.department || "",
-        college: profile.schoolInstitute || "",
-        doj: profile.dateOfJoining || "",
-        careerExp: profile.careerExperience || "",
-        industryExp: profile.industryExperience || "",
-        teachingExp: profile.teachingExperience || "",
-        designationAcademic: profile.designation || "",
-        designationAdmin: profile.administrativeDesignation || "",
-      });
+    loadProfile();
+  }, []);
 
-      const EXAMINATIONS = ["Ph.D", "PG", "UG", "Diploma", "NET/SET/Other"] as const;
-      let eduData: EducationEntry[] = EXAMINATIONS.map((exam) => ({
-        examination: exam,
-        degree: "",
-        university: "",
-        institute: "",
-        yearOfPassing: "",
-        cgpaOrPercentage: "",
-      }));
+  const loadProfile = () => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      try {
+        const parsed: FacultyProfile = JSON.parse(savedData);
+        setProfile(parsed);
+        
+        // Initialize profile info state
+        setProfileInfo({
+          name: parsed.fullName || "",
+          email: parsed.officialEmail || "",
+          contact: parsed.phoneNumber || "",
+          department: parsed.department || "",
+          college: parsed.schoolInstitute || "K J Somaiya College of Engineering",
+          doj: parsed.dateOfJoining || "",
+          careerExp: parsed.careerExperience || "",
+          industryExp: parsed.industryExperience || "",
+          teachingExp: parsed.teachingExperience || "",
+          designationAcademic: parsed.designation || "",
+          designationAdmin: parsed.administrativeDesignation || "—",
+        });
 
-      if (profile.education && profile.education.length > 0) {
-        eduData = EXAMINATIONS.map((exam) => {
-          const match = profile.education.find((e: any) => {
-            if (!e) return false;
-            if (e.examination === exam) return true;
-            const examLower = exam.toLowerCase();
-            const degLower = (e.degree || "").toLowerCase();
-            
-            if (examLower === "ph.d" && (degLower.includes("phd") || degLower.includes("ph.d"))) return true;
-            if (examLower === "pg" && (degLower.includes("m.tech") || degLower.includes("mtech") || degLower.includes("master") || degLower.includes("pg") || degLower.includes("mba") || degLower.includes("m.e") || degLower.includes("me"))) return true;
-            if (examLower === "ug" && (degLower.includes("b.tech") || degLower.includes("btech") || degLower.includes("bachelor") || degLower.includes("ug") || degLower.includes("b.e") || degLower.includes("be") || degLower.includes("b.sc") || degLower.includes("bsc"))) return true;
-            if (examLower === "diploma" && degLower.includes("diploma")) return true;
-            return false;
-          });
+        const EXAMINATIONS = ["Ph.D", "PG", "UG", "Diploma", "NET/SET/Other"] as const;
+        let eduData: EducationEntry[] = [
+          { examination: "Ph.D", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+          { examination: "PG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+          { examination: "UG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+          { examination: "Diploma", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+          { examination: "NET/SET/Other", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
+        ];
 
-          if (match) {
+        if (parsed.education && parsed.education.length > 0) {
+          eduData = EXAMINATIONS.map((exam) => {
+            const match = parsed.education.find((e: any) => {
+              if (!e) return false;
+              if (e.examination === exam) return true;
+              const examLower = exam.toLowerCase();
+              const degLower = (e.degree || "").toLowerCase();
+              
+              if (examLower === "ph.d" && (degLower.includes("phd") || degLower.includes("ph.d"))) return true;
+              if (examLower === "pg" && (degLower.includes("m.tech") || degLower.includes("mtech") || degLower.includes("master") || degLower.includes("pg") || degLower.includes("mba") || degLower.includes("m.e") || degLower.includes("me"))) return true;
+              if (examLower === "ug" && (degLower.includes("b.tech") || degLower.includes("btech") || degLower.includes("bachelor") || degLower.includes("ug") || degLower.includes("b.e") || degLower.includes("be") || degLower.includes("b.sc") || degLower.includes("bsc"))) return true;
+              if (examLower === "diploma" && degLower.includes("diploma")) return true;
+              return false;
+            });
+
+            if (match) {
+              return {
+                examination: exam,
+                degree: match.degree || "",
+                university: match.university || match.institute || "",
+                institute: match.institute || "",
+                yearOfPassing: match.yearOfPassing || "",
+                cgpaOrPercentage: match.cgpaOrPercentage || "",
+              };
+            }
+
             return {
               examination: exam,
-              degree: match.degree || "",
-              university: match.university || match.institute || "",
-              institute: match.institute || "",
-              yearOfPassing: match.yearOfPassing || "",
-              cgpaOrPercentage: match.cgpaOrPercentage || "",
+              degree: "",
+              university: "",
+              institute: "",
+              yearOfPassing: "",
+              cgpaOrPercentage: "",
             };
-          }
-
-          return {
-            examination: exam,
-            degree: "",
-            university: "",
-            institute: "",
-            yearOfPassing: "",
-            cgpaOrPercentage: "",
-          };
-        });
+          });
+        }
+        setEducationHistory(eduData);
+      } catch (e) {
+        console.error("Failed to load profile", e);
       }
-      setEducationHistory(eduData);
     }
-  }, [profile]);
+  };
 
   useEffect(() => {
     if (activities && activities.length > 0) {
-      const sortedActivities = sortActivitiesByLatestWork(activities);
-
       // 1. Research domains: collect "researchArea" or "domain" fields
       const areas: string[] = [];
       // 2. Courses delivered: collect "courseName", "subjectName", "courseTitle"
@@ -459,7 +337,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
       let completedPG = 0;
       let completedUG = 0;
 
-      sortedActivities.forEach((act) => {
+      activities.forEach((act) => {
         const type = act.activityType.toLowerCase();
         const cat = act.pmsCategory.toLowerCase();
         const data = act.data || {};
@@ -673,11 +551,6 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
     setPositionsResponsibility(positionsResponsibility.filter((_, i) => i !== index));
   };
 
-  const isGeneralized = variant === "generalized";
-  const modalTitle = isGeneralized ? "Somaiya Faculty CV (Generalized)" : "Somaiya Faculty CV";
-  const exportReportType = isGeneralized ? "Somaiya CV (Generalized)" : "Somaiya CV";
-  const generalizedActivityGroups = groupActivities(activities);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm md:p-6 print:absolute print:inset-0 print:bg-transparent print:p-0 print:backdrop-blur-none print:block print:w-full print:h-auto print:static">
       <style>{`
@@ -706,11 +579,6 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
           }
           .cv-page:last-child {
             page-break-after: avoid !important;
-          }
-          .cv-flow-page {
-            height: auto !important;
-            min-height: 297mm !important;
-            page-break-inside: auto !important;
           }
           .cv-red-stripe {
             position: absolute !important;
@@ -775,18 +643,30 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
             </span>
             <div>
               <h2 className="text-lg font-black text-gray-900 font-sans">
-                {modalTitle}
+                Somaiya Faculty CV
               </h2>
+              <p className="text-xs font-semibold text-gray-505 font-sans">
+                Interactive Print-ready Layout (Dashed outline indicates editable text)
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
+              onClick={loadProfile}
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-gray-250 bg-white px-3.5 py-2.5 text-xs font-bold text-gray-700 transition hover:bg-slate-50 font-sans"
+            >
+              <Icon name="info" className="h-4 w-4 text-gray-500" />
+              Reset Profile Info
+            </button>
+
+            <button
               onClick={() => {
                 const nameStr = profileInfo.name
                   ? profileInfo.name.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
                   : "Faculty";
-                handleExportReport(exportReportType, `${nameStr}_${isGeneralized ? "Generalized_CV" : "CV"}`);
+                handleExportReport("Somaiya CV", `${nameStr}_CV`);
               }}
               type="button"
               className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-black text-white shadow-lg shadow-red-150 transition hover:bg-red-700 font-sans"
@@ -795,58 +675,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
               Export PDF / Print
             </button>
 
-            <button
-              onClick={() => {
-                const nameStr = profileInfo.name
-                  ? profileInfo.name.trim().replace(/[^a-zA-Z0-9\s-_]/g, "").replace(/\s+/g, "_")
-                  : "Faculty";
-                const baseWordData = {
-                  fileName: `${nameStr}_${isGeneralized ? "Generalized_CV" : "CV"}`,
-                  profileInfo,
-                  researchAreas,
-                  coursesDelivered,
-                  teacherUG,
-                  teacherPG,
-                  teacherPhD,
-                  recognitions,
-                  educationHistory,
-                  notableExperience,
-                  cvDate,
-                };
-
-                if (isGeneralized) {
-                  handleExportGeneralizedWord({
-                    ...baseWordData,
-                    activities: generalizedActivityGroups.map((group) => ({
-                      title: group.title,
-                      items: group.items.map((activity) => ({
-                        academicYear: activity.academicYear,
-                        activityType: activity.activityType,
-                        details: formatActivityDetails(activity),
-                      })),
-                    })),
-                  });
-                } else {
-                  handleExportWord({
-                    ...baseWordData,
-                    researchAccomplishments,
-                    detailsPublications,
-                    researchProjects,
-                    iprCopyrights,
-                    fdpAttended,
-                    fdpOrganized,
-                    fdpDelivered,
-                    keyAchievements,
-                    positionsResponsibility,
-                  });
-                }
-              }}
-              type="button"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-black text-red-700 shadow-sm transition hover:bg-red-50 font-sans"
-            >
-              <Icon name="file" className="h-4 w-4" />
-              Export Word
-            </button>
+            <span className="h-6 w-px bg-gray-200 mx-1"></span>
 
             <button
               onClick={onClose}
@@ -1133,8 +962,6 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
                 + Add Experience Row
               </button>
 
-              {!isGeneralized && (
-              <>
               {/* Research accomplishments part 1 */}
               <table className="cv-table">
                 <thead>
@@ -1194,12 +1021,8 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
                   </tr>
                 </tbody>
               </table>
-              </>
-              )}
             </div>
 
-            {!isGeneralized && (
-            <>
             {/* ================= PAGE 2 ================= */}
             <div className="cv-page">
               <div className="cv-red-stripe"></div>
@@ -1463,82 +1286,6 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
                 </div>
               </div>
             </div>
-            </>
-            )}
-
-            {isGeneralized && (
-              <div className="cv-page cv-flow-page">
-                <div className="cv-red-stripe"></div>
-                
-                <h1 className="text-center text-xl font-bold tracking-wide font-serif mb-3 uppercase text-black pt-2">
-                  Somaiya Vidyavihar University
-                </h1>
-
-                <table className="cv-table">
-                  <thead>
-                    <tr>
-                      <th colSpan={4} className="text-center font-bold text-[11pt]" style={{ backgroundColor: "#f3f4f6" }}>
-                        Accomplishments and Projects
-                      </th>
-                    </tr>
-                  </thead>
-                </table>
-
-                {generalizedActivityGroups.length === 0 ? (
-                  <table className="cv-table">
-                    <tbody>
-                      <tr>
-                        <td className="text-center font-bold">No uploaded activities found.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                ) : (
-                  generalizedActivityGroups.map((group) => (
-                    <table className="cv-table" key={group.title}>
-                      <thead>
-                        <tr>
-                          <th colSpan={4} className="text-center font-bold text-[10.5pt]" style={{ backgroundColor: "#f3f4f6" }}>
-                            {group.title}
-                          </th>
-                        </tr>
-                        <tr style={{ backgroundColor: "#fafafa" }}>
-                          <th style={{ width: "8%" }}><strong>Sr. No</strong></th>
-                          <th style={{ width: "15%" }}><strong>Academic Year</strong></th>
-                          <th style={{ width: "25%" }}><strong>Activity Type</strong></th>
-                          <th style={{ width: "52%" }}><strong>Details</strong></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {group.items.map((activity, idx) => (
-                          <tr key={activity.id}>
-                            <td className="text-center"><strong>{idx + 1}.</strong></td>
-                            <td className="text-center">{activity.academicYear}</td>
-                            <td><strong>{activity.activityType}</strong></td>
-                            <td>
-                              <ol className="list-decimal pl-5 space-y-1 text-[9.5pt]">
-                                {formatActivityDetails(activity).map((detail, detailIdx) => (
-                                  <li key={`${activity.id}-${detailIdx}`}>{detail}</li>
-                                ))}
-                              </ol>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ))
-                )}
-
-                <div className="mt-6 flex justify-between items-center text-sm font-bold font-serif px-2">
-                  <div className="flex items-center gap-1">
-                    <span>Date:</span>
-                    <EditableCell className="min-w-[120px]" value={cvDate} onChange={setCvDate} />
-                  </div>
-                  <div>
-                    Signature of Faculty Member
-                  </div>
-                </div>
-              </div>
-            )}
 
           </div>
         </div>

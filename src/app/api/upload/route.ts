@@ -6,8 +6,100 @@ import os from "os";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+function getErrorStatus(error: unknown): number | undefined {
+    if (!error || typeof error !== "object") return undefined;
 
-import { getErrorStatus, getErrorMessage, getOrCreateFolder, getRepositoryFolder } from "@/lib/driveHelpers";
+    const candidate = error as {
+        code?: unknown;
+        response?: { status?: unknown };
+    };
+    const status = candidate.code ?? candidate.response?.status;
+
+    return typeof status === "number" ? status : undefined;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+    return error instanceof Error ? error.message : fallback;
+}
+
+async function getOrCreateFolder(drive: drive_v3.Drive, folderName: string, parentFolderId: string): Promise<string> {
+    if (!folderName) return parentFolderId;
+
+    const escapedFolderName = folderName.trim().replace(/'/g, "\\'");
+    const query = `mimeType='application/vnd.google-apps.folder' and name='${escapedFolderName}' and '${parentFolderId}' in parents and trashed=false`;
+
+    const folderSearch = await drive.files.list({
+        q: query,
+        fields: "files(id, name)",
+        spaces: "drive",
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+    });
+
+    if (folderSearch.data.files && folderSearch.data.files.length > 0) {
+        return folderSearch.data.files[0].id as string;
+    } else {
+        const folderCreate = await drive.files.create({
+            requestBody: {
+                name: folderName.trim(),
+                mimeType: "application/vnd.google-apps.folder",
+                parents: [parentFolderId],
+            },
+            fields: "id",
+            supportsAllDrives: true,
+        });
+        return folderCreate.data.id as string;
+    }
+}
+
+type RepositoryFolder = {
+    id: string;
+    warning: string;
+};
+
+async function getRepositoryFolder(drive: drive_v3.Drive): Promise<RepositoryFolder> {
+    const configuredFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim();
+
+    if (configuredFolderId) {
+        try {
+            const configuredFolder = await drive.files.get({
+                fileId: configuredFolderId,
+                fields: "id, name, mimeType",
+                supportsAllDrives: true,
+            });
+
+            if (configuredFolder.data.mimeType !== "application/vnd.google-apps.folder") {
+                throw new Error("GOOGLE_DRIVE_FOLDER_ID does not point to a Google Drive folder.");
+            }
+
+            return {
+                id: configuredFolder.data.id as string,
+                warning: "",
+            };
+        } catch (error: unknown) {
+            const status = getErrorStatus(error);
+
+            if (status !== 403 && status !== 404) {
+                throw error;
+            }
+
+            console.warn(
+                `Configured Google Drive repository returned ${status}; using the signed-in account's repository.`
+            );
+
+            return {
+                id: await getOrCreateFolder(drive, "AccredX Repository", "root"),
+                warning:
+                    "Activity saved successfully. Evidence has been uploaded to your Google Drive and metadata has been recorded in your AccredX Activities sheet.",
+            };
+        }
+    }
+
+    return {
+        id: await getOrCreateFolder(drive, "AccredX Repository", "root"),
+        warning: "",
+    };
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -113,11 +205,12 @@ export async function POST(req: NextRequest) {
 
         let sheetsSuccess = false;
         let sheetsErrorMsg = "";
+        let activityTimestamp = new Date().toISOString();
 
         // Handle Google Sheets
         try {
             const sheetName = "AccredX Activities";
-
+            
             // Keep the activity index beside the academic-year folders.
             const sheetSearch = await drive.files.list({
                 q: `mimeType='application/vnd.google-apps.spreadsheet' and name='${sheetName}' and '${repositoryFolderId}' in parents and trashed=false`,
@@ -149,7 +242,7 @@ export async function POST(req: NextRequest) {
             const driveFileUrl = `https://drive.google.com/file/d/${driveFileId}/view`;
             const facultyName = googleSession.user?.name || "Unknown Faculty";
             const facultyEmail = googleSession.user?.email || "unknown@example.com";
-            const timestamp = new Date().toISOString();
+            const timestamp = activityTimestamp;
 
             let parsedMetadata: Record<string, string> = {};
             try {
@@ -174,9 +267,9 @@ export async function POST(req: NextRequest) {
             const mappedRemarks = extractField(["remarks", "feedbackProvided", "analysis", "suggestedImprovements"]);
 
             const expectedHeaders = [
-                "Timestamp", "Faculty Email", "Faculty Name", "Academic Year",
-                "PMS Category", "Activity Type", "Title", "Role", "Level",
-                "Duration", "Outcome", "Evidence File Name", "Drive File URL",
+                "Timestamp", "Faculty Email", "Faculty Name", "Academic Year", 
+                "PMS Category", "Activity Type", "Title", "Role", "Level", 
+                "Duration", "Outcome", "Evidence File Name", "Drive File URL", 
                 "Drive File ID", "Description", "Remarks", "PMS Section",
                 "Metadata JSON"
             ];
@@ -234,6 +327,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             success: true,
             fileId: response.data.id,
+            id: activityTimestamp,
+            createdAt: new Date(activityTimestamp).toLocaleDateString("en-IN", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+            }),
             folderId: finalFolderId,
             repositoryFolderId,
             repositoryWarning,
@@ -244,8 +343,8 @@ export async function POST(req: NextRequest) {
         console.error("Error during file upload:", error);
 
         return NextResponse.json(
-            {
-                error: "Upload failed",
+            { 
+                error: "Upload failed", 
                 details: getErrorMessage(error, "Unknown error")
             },
             { status: 500 }

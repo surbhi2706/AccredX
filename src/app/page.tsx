@@ -9,10 +9,13 @@ import Header from "@/components/Header";
 import {
   findDetailedActivity,
   getActivityGroups,
+  getActivityFields,
+  getAcademicYears,
   getPmsCategories,
-  pmsCategoryMeta,
-  pmsSectionGuidance,
-} from "@/data/pmsMapping";
+  getPmsCategoryMeta,
+  getPmsSectionGuidance,
+  useConfigSync,
+} from "@/lib/configStore";
 import type { PmsDetailedActivity } from "@/data/pmsMapping";
 import Icon from "@/components/Icon";
 import Sidebar from "@/components/Sidebar";
@@ -24,10 +27,7 @@ import CvPreviewModal from "@/components/CvPreviewModal";
 import ProfileForm from "@/components/ProfileForm";
 import TimelineView from "@/components/TimelineView";
 import CourseActivityHubView from "@/components/CourseActivityHubView";
-import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
-
-const academicYears = ["2025-26", "2024-25", "2023-24"];
 
 const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
   dashboard: {
@@ -39,8 +39,8 @@ const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
     subtitle: "Enter an activity once and reuse it across reports.",
   },
   "my-activities": {
-    title: "Document Timeline",
-    subtitle: "Track and manage your uploaded evidence documents by academic year.",
+    title: "My Activities",
+    subtitle: "Review the activities you have submitted.",
   },
   reports: {
     title: "Reports",
@@ -64,7 +64,7 @@ const selectClass =
   "w-full appearance-none rounded-xl border border-gray-200 bg-white px-4 py-3.5 pr-10 text-sm font-bold text-gray-900 shadow-sm outline-none transition hover:border-red-200 focus:border-red-500 focus:ring-4 focus:ring-red-50 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400";
 
 type SavedActivity = {
-  id: number;
+  id: string;
   academicYear: string;
   pmsCategory: string;
   pmsSection: string;
@@ -76,8 +76,13 @@ type SavedActivity = {
 };
 
 export default function Home() {
+  // Loads categories/activities/form fields from the live config sheet
+  // (falls back to bundled defaults instantly, then re-renders if/when
+  // the live sheet data arrives). See src/lib/configStore.ts.
+  useConfigSync();
+
   const [previewReportType, setPreviewReportType] = useState<
-    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | null
+    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | null
   >(null);
 
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
@@ -91,33 +96,37 @@ export default function Home() {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activityLoadError, setActivityLoadError] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null);
   const [savedProfile, setSavedProfile] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("accredx_faculty_profile");
+    if (saved) {
+      try {
+        setSavedProfile(JSON.parse(saved));
+      } catch (e) {
+        console.error("Failed to parse saved profile", e);
+      }
+    }
+  }, []);
 
   const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status !== "authenticated") return;
 
-    async function fetchProfile() {
-      try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.profile) {
-            setSavedProfile(data.profile);
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch profile", e);
-      }
-    }
+    const controller = new AbortController();
 
-    fetchProfile();
+    fetch("/api/admin/check-access", { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : { isAdmin: false }))
+      .then((data) => setIsAdmin(Boolean(data.isAdmin)))
+      .catch(() => setIsAdmin(false));
+
+    return () => controller.abort();
   }, [status]);
 
   useEffect(() => {
@@ -179,7 +188,7 @@ export default function Home() {
   }
 
   const activityGroups = getActivityGroups(category);
-  const rawFields = activityFields[selectedDetailedActivity?.activity as keyof typeof activityFields] || [];
+  const rawFields = getActivityFields(selectedDetailedActivity?.activity);
 
   const fields: ActivityField[] = selectedDetailedActivity
     ? [
@@ -189,7 +198,7 @@ export default function Home() {
           label: "Self-Assessed PMS Marks",
           type: "number",
           min: 0,
-          max: pmsCategoryMeta[category]?.maxMarks,
+          max: getPmsCategoryMeta(category)?.maxMarks,
           helperText:
             "Enter the marks you are claiming. Final marks remain subject to department and college assessment.",
           required: true,
@@ -245,16 +254,151 @@ export default function Home() {
     setEvidenceFileName(file ? file.name : "");
   }
 
+  function handleEditActivity(item: SavedActivity) {
+    setEditingActivityId(item.id);
+    setYear(item.academicYear);
+    setCategory(item.pmsCategory);
+    setActivity(item.activityType);
+    const selected = findDetailedActivity(item.pmsCategory, item.activityType);
+    setSelectedDetailedActivity(selected);
+    setFormValues(item.data || {});
+    setEvidenceFileName(item.evidenceFileName || "");
+    setEvidenceFile(null);
+    setSavedMessage("");
+    setActiveView("add-activity");
+  }
+
+  function handleCancelEdit() {
+    setEditingActivityId(null);
+    setYear("");
+    setCategory("");
+    setActivity("");
+    setSelectedDetailedActivity(null);
+    setFormValues({});
+    setEvidenceFileName("");
+    setEvidenceFile(null);
+    setSavedMessage("");
+  }
+
+  async function handleDeleteActivity(item: SavedActivity) {
+    const confirmed = window.confirm(
+      `Delete "${item.activityType}"? This cannot be undone.`
+    );
+    if (!confirmed) return;
+    try {
+      const response = await fetch(
+        `/api/activities?id=${encodeURIComponent(item.id)}`,
+        { method: "DELETE" }
+      );
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to delete activity.");
+      }
+      setSavedActivities((current) =>
+        current.filter((entry) => entry.id !== item.id)
+      );
+      if (editingActivityId === item.id) {
+        handleCancelEdit();
+      }
+      setSavedMessage(result.driveWarning || "Activity deleted.");
+    } catch (error: unknown) {
+      setSavedMessage(
+        error instanceof Error ? error.message : "Unable to delete activity."
+      );
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isSaving) return;
+
+    if (editingActivityId) {
+      setIsSaving(true);
+      setSavedMessage("Updating activity...");
+
+      try {
+        let response: Response;
+
+        if (evidenceFile) {
+          // A new file was picked during edit — send multipart so the
+          // backend can swap the Drive file and update the row's
+          // evidence columns in the same request.
+          const formData = new FormData();
+          formData.append("id", editingActivityId);
+          formData.append("academicYear", year);
+          formData.append("pmsCategory", category);
+          formData.append("pmsSection", selectedDetailedActivity?.section || "");
+          formData.append("activityType", selectedDetailedActivity?.activity || activity);
+          formData.append("data", JSON.stringify(formValues));
+          formData.append("file", evidenceFile);
+
+          response = await fetch("/api/activities", {
+            method: "PATCH",
+            body: formData,
+          });
+        } else {
+          response = await fetch("/api/activities", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: editingActivityId,
+              academicYear: year,
+              pmsCategory: category,
+              pmsSection: selectedDetailedActivity?.section || "",
+              activityType: selectedDetailedActivity?.activity || activity,
+              data: formValues,
+            }),
+          });
+        }
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to update activity.");
+        }
+
+        setSavedActivities((current) =>
+          current.map((entry) =>
+            entry.id === editingActivityId
+              ? {
+                ...entry,
+                academicYear: year,
+                pmsCategory: category,
+                pmsSection: selectedDetailedActivity?.section || "",
+                activityType: selectedDetailedActivity?.activity || activity,
+                data: formValues,
+                evidenceFileName: result.evidenceFileName || entry.evidenceFileName,
+                evidenceFileId: result.evidenceFileId || entry.evidenceFileId,
+              }
+              : entry
+          )
+        );
+
+        if (result.driveWarning) {
+          setSavedMessage(result.driveWarning);
+        }
+
+        setEditingActivityId(null);
+        if (!result.driveWarning) {
+          setSavedMessage("Activity updated successfully.");
+        }
+        setActiveView("my-activities");
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : "Unknown error";
+        setSavedMessage(`Failed to update activity: ${message}`);
+      } finally {
+        setIsSaving(false);
+      }
+
+      return;
+    }
 
     setIsSaving(true);
 
     let evidenceFileId = "";
     let sheetsWarning = "";
     let repositoryWarning = "";
-    let activityId = Date.now();
+    let activityId = new Date().toISOString();
     let createdAt = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -286,6 +430,12 @@ export default function Home() {
         repositoryWarning = uploadResult.repositoryWarning || "";
         if (uploadResult.sheetsSuccess === false) {
           sheetsWarning = uploadResult.sheetsError || "Unknown error";
+        } else {
+          // The sheet row's real Timestamp is generated server-side inside
+          // /api/upload, not at click-time here — use it as the id so
+          // Edit/Delete can find this exact row later.
+          activityId = uploadResult.id || activityId;
+          createdAt = uploadResult.createdAt || createdAt;
         }
       } else {
         setSavedMessage("Saving activity...");
@@ -306,7 +456,7 @@ export default function Home() {
           throw new Error(result.error || "Unable to save activity.");
         }
 
-        activityId = result.id || activityId;
+        activityId = result.id || new Date().toISOString();
         createdAt = result.createdAt || createdAt;
       }
 
@@ -369,7 +519,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#fff_0%,#fff7f7_45%,#f8fafc_100%)] text-gray-950">
-      <Sidebar activeView={activeView} onNavigate={setActiveView} user={currentUser} onLogout={handleLogout} />
+      <Sidebar activeView={activeView} onNavigate={setActiveView} user={currentUser} onLogout={handleLogout} isAdmin={isAdmin} />
 
       <div className="min-w-0 flex-1 print:hidden">
         <Header title={header.title} subtitle={header.subtitle} />
@@ -396,6 +546,7 @@ export default function Home() {
   evidenceFileName={evidenceFileName}
   fields={fields}
 	  formValues={formValues}
+	  isEditing={Boolean(editingActivityId)}
 	  isSaving={isSaving}
 	  savedMessage={savedMessage}
   year={year}
@@ -412,6 +563,7 @@ export default function Home() {
       });
     }
   }}
+  onCancelEdit={handleCancelEdit}
   onCategoryChange={(value) => {
     setCategory(value);
     handleActivityChange("");
@@ -428,7 +580,13 @@ export default function Home() {
           ) : null}
 
           {activeView === "my-activities" ? (
-            <TimelineView activities={savedActivities} />
+            <MyActivitiesView
+              activities={savedActivities}
+              error={activityLoadError}
+              isLoading={isLoadingActivities}
+              onDelete={handleDeleteActivity}
+              onEdit={handleEditActivity}
+            />
           ) : null}
 
           {activeView === "reports" ? (
@@ -453,7 +611,7 @@ export default function Home() {
         </main>
       </div>
 
-      {previewReportType && previewReportType !== "Somaiya CV" && previewReportType !== "Somaiya CV (Generalized)" && (
+      {previewReportType && previewReportType !== "Somaiya CV" && (
         <ReportPreviewModal
           reportType={previewReportType}
           activities={savedActivities}
@@ -462,11 +620,9 @@ export default function Home() {
         />
       )}
 
-      {(previewReportType === "Somaiya CV" || previewReportType === "Somaiya CV (Generalized)") && (
+      {previewReportType === "Somaiya CV" && (
         <CvPreviewModal
-          profile={savedProfile}
           activities={savedActivities}
-          variant={previewReportType === "Somaiya CV (Generalized)" ? "generalized" : "standard"}
           onClose={() => setPreviewReportType(null)}
         />
       )}
@@ -483,10 +639,12 @@ type AddActivityViewProps = {
   evidenceFileName: string;
   fields: ActivityField[];
   formValues: Record<string, string>;
+  isEditing: boolean;
   isSaving: boolean;
   savedMessage: string;
   year: string;
   onActivityChange: (value: string) => void;
+  onCancelEdit: () => void;
   onCategoryChange: (value: string) => void;
   onEvidenceChange: (file: File | null) => void;
   onFieldChange: (fieldName: string, value: string) => void;
@@ -503,10 +661,12 @@ function AddActivityView({
   evidenceFileName,
   fields,
   formValues,
+  isEditing,
   isSaving,
   savedMessage,
   year,
   onActivityChange,
+  onCancelEdit,
   onCategoryChange,
   onEvidenceChange,
   onFieldChange,
@@ -526,7 +686,7 @@ function AddActivityView({
                 Faculty Input
               </p>
               <h2 className="mt-2 text-3xl font-black tracking-tight">
-                Add New Activity
+                {isEditing ? "Edit Activity" : "Add New Activity"}
               </h2>
             </div>
 
@@ -551,7 +711,7 @@ function AddActivityView({
                 className={selectClass}
               >
                 <option value="">Select year</option>
-                {academicYears.map((item) => (
+                {getAcademicYears().map((item) => (
                   <option key={item}>{item}</option>
                 ))}
               </select>
@@ -571,7 +731,7 @@ function AddActivityView({
                 <option value="">Select category</option>
                 {getPmsCategories().map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat} ({pmsCategoryMeta[cat]?.maxMarks ?? 0} marks)
+                    {cat} ({getPmsCategoryMeta(cat)?.maxMarks ?? 0} marks)
                   </option>
                 ))}
               </select>
@@ -610,7 +770,7 @@ function AddActivityView({
                 values={formValues}
                 evidenceFileName={evidenceFileName}
                 scoringGuidance={
-                  pmsSectionGuidance[selectedDetailedActivity.section]
+                  getPmsSectionGuidance(selectedDetailedActivity.section)
                 }
                 onChange={onFieldChange}
                 onEvidenceChange={onEvidenceChange}
@@ -621,14 +781,31 @@ function AddActivityView({
                   Required fields are marked in red.
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-red-400"
-                >
-                  <Icon name="check" className="h-4.5 w-4.5" />
-                  {isSaving ? "Saving Activity..." : "Save Activity"}
-                </button>
+                <div className="flex items-center gap-3">
+                  {isEditing ? (
+                    <button
+                      type="button"
+                      onClick={onCancelEdit}
+                      className="inline-flex items-center justify-center rounded-xl border border-gray-200 px-5 py-3 text-sm font-black text-gray-600 transition hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-red-400"
+                  >
+                    <Icon name="check" className="h-4.5 w-4.5" />
+                    {isSaving
+                      ? isEditing
+                        ? "Updating Activity..."
+                        : "Saving Activity..."
+                      : isEditing
+                        ? "Update Activity"
+                        : "Save Activity"}
+                  </button>
+                </div>
               </div>
 
               {savedMessage ? (
@@ -786,15 +963,18 @@ function DashboardView({
   );
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MyActivitiesView({
   activities,
   error,
   isLoading,
+  onDelete,
+  onEdit,
 }: {
   activities: SavedActivity[];
   error: string;
   isLoading: boolean;
+  onDelete: (activity: SavedActivity) => void;
+  onEdit: (activity: SavedActivity) => void;
 }) {
   return (
     <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
@@ -813,7 +993,12 @@ function MyActivitiesView({
       ) : activities.length ? (
         <div className="mt-5 space-y-3">
           {activities.map((item) => (
-            <ActivityListItem key={item.id} activity={item} />
+            <ActivityListItem
+              key={item.id}
+              activity={item}
+              onDelete={onDelete}
+              onEdit={onEdit}
+            />
           ))}
         </div>
       ) : (
@@ -834,14 +1019,13 @@ function ReportsView({
 }: {
   activities: SavedActivity[];
   evidenceUploads: number;
-  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)") => void;
+  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV") => void;
 }) {
   const reportCards = [
     { title: "PMS Report", icon: "layers", color: "text-red-600 bg-red-50" },
     { title: "NBA Summary", icon: "award", color: "text-amber-600 bg-amber-50" },
     { title: "Annual Report", icon: "chart", color: "text-violet-650 bg-violet-50" },
     { title: "Somaiya CV", icon: "file", color: "text-sky-600 bg-sky-50" },
-    { title: "Somaiya CV (Generalized)", icon: "clipboard", color: "text-emerald-600 bg-emerald-50" },
   ] as const;
 
   return (
@@ -919,6 +1103,7 @@ function MobileNav({
   const items: Array<{ id: ViewId; label: string }> = [
     { id: "dashboard", label: "Dashboard" },
     { id: "add-activity", label: "Add" },
+    { id: "my-activities", label: "Activities" },
     { id: "reports", label: "Reports" },
     { id: "profile", label: "Profile" },
     { id: "timeline", label: "Timeline" },
@@ -966,7 +1151,15 @@ function MetricCard({
   );
 }
 
-function ActivityListItem({ activity }: { activity: SavedActivity }) {
+function ActivityListItem({
+  activity,
+  onDelete,
+  onEdit,
+}: {
+  activity: SavedActivity;
+  onDelete?: (activity: SavedActivity) => void;
+  onEdit?: (activity: SavedActivity) => void;
+}) {
   return (
     <article className="rounded-2xl border border-gray-100 p-4 transition hover:border-red-100 hover:bg-red-50/40">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -980,7 +1173,7 @@ function ActivityListItem({ activity }: { activity: SavedActivity }) {
           {activity.academicYear}
         </span>
       </div>
-      <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
+      <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-bold">
         <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
           {activity.createdAt}
         </span>
@@ -992,6 +1185,31 @@ function ActivityListItem({ activity }: { activity: SavedActivity }) {
         >
           {activity.evidenceFileName ? "Evidence attached" : "No evidence"}
         </span>
+
+        {onEdit || onDelete ? (
+          <span className="ml-auto flex items-center gap-2">
+            {onEdit ? (
+              <button
+                type="button"
+                onClick={() => onEdit(activity)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+              >
+                <Icon name="edit" className="h-3.5 w-3.5" />
+                Edit
+              </button>
+            ) : null}
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => onDelete(activity)}
+                className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+              >
+                <Icon name="trash" className="h-3.5 w-3.5" />
+                Delete
+              </button>
+            ) : null}
+          </span>
+        ) : null}
       </div>
     </article>
   );

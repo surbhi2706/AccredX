@@ -78,7 +78,7 @@ function migrateEducation(savedEdu: any[]): EducationEntry[] {
   return list;
 }
 
-// STORAGE_KEY removed as we now use Google Sheets for persistence
+const STORAGE_KEY = "accredx_faculty_profile";
 
 function Field({
   label,
@@ -124,33 +124,26 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    // Load from localStorage on mount
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
       try {
-        const res = await fetch("/api/profile");
-        if (res.ok) {
-          const data = await res.json();
-          if (data.profile) {
-            const parsed = data.profile;
-            if (parsed.education) {
-              parsed.education = migrateEducation(parsed.education);
-            } else {
-              parsed.education = defaultProfile.education;
-            }
-            setProfile({
-              ...defaultProfile,
-              ...parsed,
-            });
-            setIsLoaded(true);
-            return;
-          }
+        const parsed = JSON.parse(savedData);
+        if (parsed.education) {
+          parsed.education = migrateEducation(parsed.education);
+        } else {
+          parsed.education = defaultProfile.education;
         }
+        setProfile({
+          ...defaultProfile,
+          ...parsed,
+        });
       } catch (e) {
-        console.error("Failed to fetch profile data", e);
+        console.error("Failed to parse profile data", e);
       }
-
+    } else {
       // Fallback to initial user data
       setProfile((prev) => ({
         ...prev,
@@ -160,10 +153,8 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
         employeeId: user.employeeId,
         designation: user.designation,
       }));
-      setIsLoaded(true);
-    };
-
-    fetchProfile();
+    }
+    setIsLoaded(true);
   }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,64 +163,32 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
     setIsSaved(false);
   };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const res = await fetch("/api/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(profile),
-      });
-      if (res.ok) {
-        setIsSaved(true);
-        setIsEditingProfile(false);
-        if (onSave) {
-          onSave(profile);
-        }
-        setTimeout(() => setIsSaved(false), 3000);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        const message =
-          data.error === "Unauthorized" || res.status === 401
-            ? data.error || "Your Google session expired. Sign out and sign in again."
-            : data.details || data.error || "Failed to save profile to Google Sheets.";
-        alert(message);
-      }
-    } catch (e) {
-      console.error("Save error", e);
-      alert("An error occurred while saving.");
-    } finally {
-      setIsSaving(false);
+  const handleSave = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+    setIsSaved(true);
+    setIsEditingProfile(false);
+    if (onSave) {
+      onSave(profile);
     }
+    setTimeout(() => setIsSaved(false), 3000);
   };
 
-  const handleCancel = async () => {
-    setIsEditingProfile(false);
-    setIsSaved(false);
-    // Refresh data from API to discard unsaved changes
-    try {
-      const res = await fetch("/api/profile");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.profile) {
-          const parsed = data.profile;
-          if (parsed.education) parsed.education = migrateEducation(parsed.education);
-          else parsed.education = defaultProfile.education;
-          setProfile({ ...defaultProfile, ...parsed });
-          return;
-        }
-      }
-    } catch (e) {
-      console.error("Cancel refresh error", e);
+  const handleCancel = () => {
+    const savedData = localStorage.getItem(STORAGE_KEY);
+    if (savedData) {
+      setProfile(JSON.parse(savedData));
+    } else {
+      setProfile({
+        ...defaultProfile,
+        fullName: user.name,
+        officialEmail: user.email,
+        department: user.department,
+        employeeId: user.employeeId,
+        designation: user.designation,
+      });
     }
-    setProfile({
-      ...defaultProfile,
-      fullName: user.name,
-      officialEmail: user.email,
-      department: user.department,
-      employeeId: user.employeeId,
-      designation: user.designation,
-    });
+    setIsSaved(false);
+    setIsEditingProfile(false);
   };
 
   if (!isLoaded) return null;
@@ -417,20 +376,10 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={isSaving}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:opacity-70"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100"
               >
-                {isSaving ? (
-                  <span className="flex items-center gap-2">
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-                    Saving...
-                  </span>
-                ) : (
-                  <>
-                    <Icon name="check" className="h-4 w-4" />
-                    Save Changes
-                  </>
-                )}
+                <Icon name="check" className="h-4 w-4" />
+                Save Changes
               </button>
             </div>
           )}

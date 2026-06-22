@@ -6,7 +6,7 @@ import type { UserProfile } from "@/components/LoginScreen";
 import { handleExportReport } from "@/utils/export";
 
 type SavedActivity = {
-  id: number;
+  id: string;
   academicYear: string;
   pmsCategory: string;
   activityType: string;
@@ -224,8 +224,11 @@ export default function ReportPreviewModal({
             {/* Institution Header */}
             <div className="border-b-2 border-red-700 pb-5 text-center">
               <h1 className="text-xl font-black uppercase tracking-wider text-red-700">
-                Somaiya Vidyavihar University
+                AccredX Institute of Technology
               </h1>
+              <p className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-widest">
+                Office of Faculty Development and Quality Assurance
+              </p>
               <h2 className="mt-4 text-2xl font-black text-slate-800 tracking-tight">
                 {reportType === "PMS Report" && "Faculty Performance Measurement System (PMS) Report"}
                 {reportType === "NBA Summary" && "National Board of Accreditation (NBA) Summary Portfolio"}
