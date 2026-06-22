@@ -39,8 +39,8 @@ const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
     subtitle: "Enter an activity once and reuse it across reports.",
   },
   "my-activities": {
-    title: "My Activities",
-    subtitle: "Review the activities you have submitted.",
+    title: "Document Timeline",
+    subtitle: "Track and manage your uploaded evidence documents by academic year.",
   },
   reports: {
     title: "Reports",
@@ -91,7 +91,9 @@ export default function Home() {
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [activityLoadError, setActivityLoadError] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [savedProfile, setSavedProfile] = useState<any>(null);
@@ -426,11 +428,7 @@ export default function Home() {
           ) : null}
 
           {activeView === "my-activities" ? (
-            <MyActivitiesView
-              activities={savedActivities}
-              error={activityLoadError}
-              isLoading={isLoadingActivities}
-            />
+            <TimelineView activities={savedActivities} />
           ) : null}
 
           {activeView === "reports" ? (
@@ -788,6 +786,7 @@ function DashboardView({
   );
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function MyActivitiesView({
   activities,
   error,
@@ -920,7 +919,6 @@ function MobileNav({
   const items: Array<{ id: ViewId; label: string }> = [
     { id: "dashboard", label: "Dashboard" },
     { id: "add-activity", label: "Add" },
-    { id: "my-activities", label: "Activities" },
     { id: "reports", label: "Reports" },
     { id: "profile", label: "Profile" },
     { id: "timeline", label: "Timeline" },

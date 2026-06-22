@@ -20,7 +20,6 @@ type SidebarProps = {
 const navItems = [
   { id: "dashboard", label: "Dashboard", icon: "grid", color: "text-sky-600 bg-sky-50" },
   { id: "add-activity", label: "Add Activity", icon: "plus", color: "text-red-600 bg-red-50" },
-  { id: "my-activities", label: "My Activities", icon: "clipboard", color: "text-emerald-600 bg-emerald-50" },
   { id: "reports", label: "Reports", icon: "chart", color: "text-violet-600 bg-violet-50" },
   { id: "profile", label: "Profile", icon: "user", color: "text-amber-600 bg-amber-50" },
   { id: "timeline", label: "Timeline", icon: "history", color: "text-indigo-600 bg-indigo-50" },
