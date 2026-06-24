@@ -89,6 +89,7 @@ console.log("PAGE YEARS:", academicYears);
   >(null);
 
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
+  const [editingActivity, setEditingActivity] = useState<SavedActivity | null>(null);
   const [year, setYear] = useState("");
   const [category, setCategory] = useState("");
   const [selectedDetailedActivity, setSelectedDetailedActivity] =
@@ -257,6 +258,7 @@ console.log("PAGE YEARS:", academicYears);
     setEvidenceFileName("");
     setEvidenceFile(null);
     setSavedMessage("");
+    setEditingActivity(null);
   }
 
   function handleFieldChange(fieldName: string, value: string) {
@@ -273,27 +275,39 @@ console.log("PAGE YEARS:", academicYears);
   }
 
   function handleEditActivity(item: SavedActivity) {
-  console.log("Edit clicked:", item);
+    setEditingActivity(item);
+    setYear(item.academicYear);
+    setCategory(item.pmsCategory);
+    
+    const detailed = findDetailedActivity(item.pmsCategory, item.activityType);
+    setSelectedDetailedActivity(detailed);
+    setActivity(item.activityType);
+    
+    setFormValues(item.data || {});
+    setEvidenceFileName(item.evidenceFileName || "");
+    setEvidenceFile(null);
+    setActiveView("add-activity");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleDeleteActivity(item: SavedActivity) {
-  const confirmed = window.confirm(
-    `Delete "${item.activityType}"?`
-  );
+    const confirmed = window.confirm(`Delete "${item.activityType}"?`);
+    if (!confirmed) return;
 
-  if (!confirmed) return;
+    setSavedActivities((current) => current.filter((a) => a.id !== item.id));
 
-  const response = await fetch(
-    `/api/activities?id=${item.id}`,
-    {
-      method: "DELETE",
+    try {
+      const response = await fetch(`/api/activities?id=${item.id}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        throw new Error("Delete failed");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      alert("Failed to delete activity. Please refresh.");
     }
-  );
-
-  const result = await response.json();
-
-  console.log("DELETE RESULT:", result);
-}
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -301,18 +315,18 @@ console.log("PAGE YEARS:", academicYears);
 
     setIsSaving(true);
 
-    let evidenceFileId = "";
+    let evidenceFileId = editingActivity ? editingActivity.evidenceFileId : "";
     let sheetsWarning = "";
     let repositoryWarning = "";
-    let activityId = Date.now();
-    let createdAt = new Date().toLocaleDateString("en-IN", {
+    let activityId = editingActivity ? editingActivity.id : Date.now();
+    let createdAt = editingActivity ? editingActivity.createdAt : new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
 
     try {
-      if (evidenceFile) {
+      if (evidenceFile && !editingActivity) {
         setSavedMessage("Uploading evidence...");
         const formData = new FormData();
         formData.append("file", evidenceFile);
@@ -338,26 +352,33 @@ console.log("PAGE YEARS:", academicYears);
           sheetsWarning = uploadResult.sheetsError || "Unknown error";
         }
       } else {
-        setSavedMessage("Saving activity...");
+        setSavedMessage(editingActivity ? "Updating activity..." : "Saving activity...");
+        
+        const method = editingActivity ? "PUT" : "POST";
+        const bodyPayload = {
+          ...(editingActivity ? { id: editingActivity.id } : {}),
+          academicYear: year,
+          pmsCategory: category,
+          pmsSection: selectedDetailedActivity?.section || "",
+          activityType: selectedDetailedActivity?.activity || activity,
+          data: formValues,
+        };
+
         const response = await fetch("/api/activities", {
-          method: "POST",
+          method,
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            academicYear: year,
-            pmsCategory: category,
-            pmsSection: selectedDetailedActivity?.section || "",
-            activityType: selectedDetailedActivity?.activity || activity,
-            data: formValues,
-          }),
+          body: JSON.stringify(bodyPayload),
         });
         const result = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          throw new Error(result.error || "Unable to save activity.");
+          throw new Error(result.error || `Unable to ${editingActivity ? 'update' : 'save'} activity.`);
         }
 
-        activityId = result.id || activityId;
-        createdAt = result.createdAt || createdAt;
+        if (!editingActivity) {
+          activityId = result.id || activityId;
+          createdAt = result.createdAt || createdAt;
+        }
       }
 
       const activityPayload: SavedActivity = {
@@ -372,10 +393,12 @@ console.log("PAGE YEARS:", academicYears);
         createdAt,
       };
 
-      setSavedActivities((currentActivities) => [
-        activityPayload,
-        ...currentActivities,
-      ]);
+      setSavedActivities((currentActivities) => {
+        if (editingActivity) {
+          return currentActivities.map(a => a.id === activityId ? activityPayload : a);
+        }
+        return [activityPayload, ...currentActivities];
+      });
       console.log("Activity ready for backend save:", activityPayload);
 
       if (sheetsWarning) {
@@ -383,12 +406,13 @@ console.log("PAGE YEARS:", academicYears);
       } else if (repositoryWarning) {
         setSavedMessage(repositoryWarning);
       } else {
-        setSavedMessage("Activity saved successfully. Evidence has been uploaded to your Google Drive and metadata has been recorded in your AccredX Activities sheet.");
+        setSavedMessage(`Activity ${editingActivity ? 'updated' : 'saved'} successfully.`);
       }
 
       setEvidenceFile(null);
       setEvidenceFileName("");
       setFormValues({});
+      setEditingActivity(null);
     } catch (error: unknown) {
       console.error("Error uploading file:", error);
       const message =
