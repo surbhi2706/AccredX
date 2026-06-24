@@ -8,13 +8,15 @@ export type ViewId =
   | "reports"
   | "profile"
   | "timeline"
-  | "course-activity-hub";
+  | "course-activity-hub"
+    "admin";
 
 type SidebarProps = {
   activeView: ViewId;
   onNavigate: (view: ViewId) => void;
   user: UserProfile;
   onLogout: () => void;
+  isAdmin?: boolean;
 };
 
 const navItems = [
@@ -26,7 +28,7 @@ const navItems = [
   { id: "course-activity-hub", label: "Course Activity Hub", icon: "book", color: "text-rose-650 bg-rose-50" },
 ] as const;
 
-export default function Sidebar({ activeView, onNavigate, user, onLogout }: SidebarProps) {
+export default function Sidebar({ activeView, onNavigate, user, onLogout, isAdmin }: SidebarProps) {
   const initials = user.name
     ? user.name
         .split(" ")
@@ -112,6 +114,16 @@ export default function Sidebar({ activeView, onNavigate, user, onLogout }: Side
             Repository Encrypted
           </div>
         </div>
+
+        {isAdmin && (
+  <button
+    type="button"
+    onClick={() => onNavigate("admin")}
+    className="w-full rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-left font-bold text-red-700"
+  >
+    Admin Dashboard
+  </button>
+)}
 
         {/* Logout Button */}
         <button

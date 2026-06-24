@@ -183,6 +183,7 @@ function fallbackMetadata(
 }
 
 export async function GET() {
+    console.log("ACTIVITIES API HIT");
     try {
         const session = await getServerSession(authOptions);
         const googleSession = session as (typeof session & GoogleSession);
@@ -271,6 +272,8 @@ export async function GET() {
                 };
             })
             .reverse();
+        
+        console.log("ACTIVITIES RETURNED:", activities.length);
 
         return NextResponse.json({ activities });
     } catch (error: unknown) {
@@ -385,6 +388,119 @@ export async function POST(req: NextRequest) {
                         ? error.message
                         : "Unable to save activity to Google Sheets.",
             },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        const googleSession = session as (typeof session & GoogleSession);
+
+        if (
+            !googleSession ||
+            !googleSession.accessToken ||
+            googleSession.error ||
+            !googleSession.user?.email
+        ) {
+            return NextResponse.json(
+                { error: "Your Google session has expired. Please sign in again." },
+                { status: 401 }
+            );
+        }
+
+        const { searchParams } = new URL(req.url);
+        const id = searchParams.get("id");
+
+        console.log("Deleting activity:", id);
+
+        const auth = getSessionAuth(googleSession);
+        const drive = google.drive({ version: "v3", auth });
+        const sheets = google.sheets({ version: "v4", auth });
+
+        const repositoryFolderId = await findRepositoryFolderId(drive);
+
+        if (!repositoryFolderId) {
+            return NextResponse.json(
+                { error: "Repository folder not found" },
+                { status: 404 }
+            );
+        }
+
+        const spreadsheetId = await findSpreadsheetId(
+            drive,
+            repositoryFolderId
+        );
+
+        console.log("GET SPREADSHEET ID:", spreadsheetId);
+
+        console.log("DELETE SPREADSHEET ID:", spreadsheetId);
+
+
+        if (!spreadsheetId) {
+            return NextResponse.json(
+                { error: "Spreadsheet not found" },
+                { status: 404 }
+            );
+        }
+
+        const valuesResponse = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: "Sheet1!A:R",
+        });
+
+        const rows = (valuesResponse.data.values ?? []) as string[][];
+        console.log("GET TOTAL ROWS:", rows.length);
+        console.log("DELETE ROWS:", rows);
+console.log("DELETE TOTAL ROWS:", rows.length);
+
+        const idMs = Number(id);
+
+        console.log("TOTAL ROWS:", rows.length);
+
+        const dataRowIndex = rows.slice(1).findIndex((row, index) => {
+            const timestamp = row[0] || "";
+
+            const rowMs = Date.parse(timestamp);
+
+            const generatedId = Number.isNaN(rowMs)
+                ? index + 1
+                : rowMs + index;
+
+            console.log(
+      "CHECKING ROW",
+      index,
+      "generatedId:",
+      generatedId,
+      "incoming:",
+      id
+    );
+
+            return generatedId === idMs;
+        });
+
+        console.log("FOUND ROW:", dataRowIndex);
+
+        if (dataRowIndex === -1) {
+            return NextResponse.json(
+                { error: "Activity not found" },
+                { status: 404 }
+            );
+        }
+
+        console.log("ROW DATA:", rows[dataRowIndex + 1]);
+
+        return NextResponse.json({
+            success: true,
+            deletedId: id,
+            rowIndex: dataRowIndex,
+        });
+    } catch (error) {
+        console.error(error);
+
+        return NextResponse.json(
+            { error: "Delete failed" },
             { status: 500 }
         );
     }
