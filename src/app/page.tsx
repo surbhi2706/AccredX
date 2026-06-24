@@ -7,12 +7,14 @@ import { useSession, signOut } from "next-auth/react";
 import DynamicForm from "@/components/DynamicForm";
 import Header from "@/components/Header";
 import {
-  findDetailedActivity,
-  getActivityGroups,
+  useConfigSync,
+  getAcademicYears,
   getPmsCategories,
-  pmsCategoryMeta,
-  pmsSectionGuidance,
-} from "@/data/pmsMapping";
+  getPmsCategoryMeta,
+  getPmsSectionGuidance,
+  getActivityGroups,
+  findDetailedActivity,
+} from "@/lib/configStore";
 import type { PmsDetailedActivity } from "@/data/pmsMapping";
 import Icon from "@/components/Icon";
 import Sidebar from "@/components/Sidebar";
@@ -26,8 +28,7 @@ import TimelineView from "@/components/TimelineView";
 import CourseActivityHubView from "@/components/CourseActivityHubView";
 import { activityFields } from "@/data/formFields";
 import type { ActivityField } from "@/data/formFields";
-
-const academicYears = ["2025-26", "2024-25", "2023-24"];
+import AdminDashboard from "./admin/page";
 
 const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
   dashboard: {
@@ -58,6 +59,10 @@ const viewCopy: Record<ViewId, { title: string; subtitle: string }> = {
     title: "Course Activity Hub",
     subtitle: "Complete teaching history, activity tracking, and accreditation evidence.",
   },
+  admin: {
+  title: "Admin Dashboard",
+  subtitle: "Manage PMS categories and configuration",
+},
 };
 
 const selectClass =
@@ -76,6 +81,9 @@ type SavedActivity = {
 };
 
 export default function Home() {
+  useConfigSync();
+  const academicYears = getAcademicYears();
+console.log("PAGE YEARS:", academicYears);
   const [previewReportType, setPreviewReportType] = useState<
     "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | null
   >(null);
@@ -97,8 +105,27 @@ export default function Home() {
   const [activityLoadError, setActivityLoadError] = useState("");
   const [savedActivities, setSavedActivities] = useState<SavedActivity[]>([]);
   const [savedProfile, setSavedProfile] = useState<any>(null);
-
   const { data: session, status } = useSession();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+  if (status !== "authenticated") return;
+
+  async function checkAdminAccess() {
+    try {
+      const response = await fetch("/api/admin/check-access");
+      const data = await response.json();
+
+      setIsAdmin(Boolean(data.isAdmin));
+    } catch (error) {
+      console.error("Admin access check failed:", error);
+      setIsAdmin(false);
+    }
+  }
+
+  checkAdminAccess();
+}, [status]);
 
   useEffect(() => {
     if (status !== "authenticated") return;
@@ -189,7 +216,7 @@ export default function Home() {
           label: "Self-Assessed PMS Marks",
           type: "number",
           min: 0,
-          max: pmsCategoryMeta[category]?.maxMarks,
+          max: getPmsCategoryMeta(category)?.maxMarks,
           helperText:
             "Enter the marks you are claiming. Final marks remain subject to department and college assessment.",
           required: true,
@@ -244,6 +271,29 @@ export default function Home() {
     setEvidenceFile(file);
     setEvidenceFileName(file ? file.name : "");
   }
+
+  function handleEditActivity(item: SavedActivity) {
+  console.log("Edit clicked:", item);
+  }
+
+  async function handleDeleteActivity(item: SavedActivity) {
+  const confirmed = window.confirm(
+    `Delete "${item.activityType}"?`
+  );
+
+  if (!confirmed) return;
+
+  const response = await fetch(
+    `/api/activities?id=${item.id}`,
+    {
+      method: "DELETE",
+    }
+  );
+
+  const result = await response.json();
+
+  console.log("DELETE RESULT:", result);
+}
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -369,7 +419,7 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-[linear-gradient(180deg,#fff_0%,#fff7f7_45%,#f8fafc_100%)] text-gray-950">
-      <Sidebar activeView={activeView} onNavigate={setActiveView} user={currentUser} onLogout={handleLogout} />
+      <Sidebar activeView={activeView} onNavigate={setActiveView} user={currentUser} onLogout={handleLogout} isAdmin={isAdmin}/>
 
       <div className="min-w-0 flex-1 print:hidden">
         <Header title={header.title} subtitle={header.subtitle} />
@@ -379,11 +429,13 @@ export default function Home() {
 
           {activeView === "dashboard" ? (
             <DashboardView
-              activities={savedActivities}
-              completedFields={completedFields}
-              evidenceUploads={evidenceUploads}
-              onAddActivity={() => setActiveView("add-activity")}
-            />
+  activities={savedActivities}
+  completedFields={completedFields}
+  evidenceUploads={evidenceUploads}
+  onAddActivity={() => setActiveView("add-activity")}
+  onEdit={handleEditActivity}
+  onDelete={handleDeleteActivity}
+/>
           ) : null}
 
           {activeView === "add-activity" ? (
@@ -445,6 +497,10 @@ export default function Home() {
 
           {activeView === "timeline" ? (
             <TimelineView activities={savedActivities} />
+          ) : null}
+
+          {activeView === "admin" ? (
+            <AdminDashboard />
           ) : null}
 
           {activeView === "course-activity-hub" ? (
@@ -513,6 +569,7 @@ function AddActivityView({
   onSubmit,
   onYearChange,
 }: AddActivityViewProps) {
+  const academicYears = getAcademicYears();
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
       <form
@@ -571,8 +628,8 @@ function AddActivityView({
                 <option value="">Select category</option>
                 {getPmsCategories().map((cat) => (
                   <option key={cat} value={cat}>
-                    {cat} ({pmsCategoryMeta[cat]?.maxMarks ?? 0} marks)
-                  </option>
+  {cat} ({getPmsCategoryMeta(cat)?.maxMarks ?? 0} marks)
+</option>
                 ))}
               </select>
             </SelectionField>
@@ -610,7 +667,7 @@ function AddActivityView({
                 values={formValues}
                 evidenceFileName={evidenceFileName}
                 scoringGuidance={
-                  pmsSectionGuidance[selectedDetailedActivity.section]
+                  getPmsSectionGuidance(selectedDetailedActivity.section)
                 }
                 onChange={onFieldChange}
                 onEvidenceChange={onEvidenceChange}
@@ -698,11 +755,15 @@ function DashboardView({
   completedFields,
   evidenceUploads,
   onAddActivity,
+  onEdit,
+  onDelete,
 }: {
   activities: SavedActivity[];
   completedFields: number;
   evidenceUploads: number;
   onAddActivity: () => void;
+  onEdit: (activity: SavedActivity) => void;
+  onDelete: (activity: SavedActivity) => void;
 }) {
   const latestActivities = activities.slice(0, 4);
   const progress = activities.length
@@ -771,7 +832,7 @@ function DashboardView({
         {latestActivities.length ? (
           <div className="mt-5 space-y-3">
             {latestActivities.map((item) => (
-              <ActivityListItem key={item.id} activity={item} />
+              <ActivityListItem key={item.id} activity={item} onEdit={onEdit} onDelete={onDelete}/>
             ))}
           </div>
         ) : (
@@ -966,32 +1027,67 @@ function MetricCard({
   );
 }
 
-function ActivityListItem({ activity }: { activity: SavedActivity }) {
+function ActivityListItem({
+  activity,
+  onEdit,
+  onDelete,
+}: {
+  activity: SavedActivity;
+  onEdit: (activity: SavedActivity) => void;
+  onDelete: (activity: SavedActivity) => void;
+}) {
   return (
     <article className="rounded-2xl border border-gray-100 p-4 transition hover:border-red-100 hover:bg-red-50/40">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="font-black text-gray-950">{activity.activityType}</h3>
+          <h3 className="font-black text-gray-950">
+            {activity.activityType}
+          </h3>
           <p className="mt-1 text-sm font-semibold text-gray-500">
             {activity.pmsCategory}
           </p>
         </div>
+
         <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">
           {activity.academicYear}
         </span>
       </div>
+
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
         <span className="rounded-full bg-gray-100 px-3 py-1 text-gray-600">
           {activity.createdAt}
         </span>
+
         <span
-          className={`rounded-full px-3 py-1 ${activity.evidenceFileName
-            ? "bg-emerald-50 text-emerald-700"
-            : "bg-amber-50 text-amber-700"
-            }`}
+          className={`rounded-full px-3 py-1 ${
+            activity.evidenceFileName
+              ? "bg-emerald-50 text-emerald-700"
+              : "bg-amber-50 text-amber-700"
+          }`}
         >
-          {activity.evidenceFileName ? "Evidence attached" : "No evidence"}
+          {activity.evidenceFileName
+            ? "Evidence attached"
+            : "No evidence"}
         </span>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => onEdit(activity)}
+          className="rounded-lg bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 transition hover:bg-blue-100"
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDelete(activity)}
+          className="rounded-lg bg-red-50 px-3 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100"
+        >
+          Delete
+        </button>
       </div>
     </article>
   );
