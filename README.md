@@ -71,6 +71,12 @@ AccredX is a comprehensive portal tailored for faculty members and academic inst
 | **Cloud Storage** | Secure, scalable storage using Google Drive API. |
 | **Metadata Sync** | Fast and structured data retrieval using Google Sheets. |
 
+### Configuration & Administration
+| Feature | Description |
+|---|---|
+| **Admin Dashboard** | Live, no-code configuration of categories, activities, form fields, and academic years. |
+| **Secure Access** | Simple environment variable-based authorization for administrative control. |
+
 ---
 
 ## 🏗️ System Architecture
@@ -228,13 +234,16 @@ GOOGLE_CLIENT_SECRET="your_google_client_secret_here"
 # NextAuth Configuration
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="your_generated_nextauth_secret_here"
+
+# Admin Configuration
+ADMIN_EMAILS="your_email@example.com,admin2@example.com"
 ```
 
 ---
 
 ## 🔮 Future Enhancements
 
-- **Admin Dashboard:** Centralized view for college administration to monitor college-wide compliance.
+- **College Administration:** Centralized view for college administration to monitor college-wide compliance.
 - **Advanced Analytics:** Data visualization for research output and academic metrics.
 - **Accreditation Insights:** AI-driven suggestions for improving NBA/NAAC scores.
 - **Bulk Uploads:** Support for importing historical data via CSV.
