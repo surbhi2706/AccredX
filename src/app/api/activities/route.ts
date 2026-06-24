@@ -455,52 +455,203 @@ export async function DELETE(req: NextRequest) {
         console.log("DELETE ROWS:", rows);
 console.log("DELETE TOTAL ROWS:", rows.length);
 
+        const headerIndexes = new Map(
+            rows[0].map((header, index) => [String(header).trim(), index])
+        );
+        const signedInEmail = googleSession.user.email.toLowerCase();
+        
+        const filteredRows = rows
+            .slice(1)
+            .filter((row) => rowValue(row, headerIndexes, "Faculty Email").toLowerCase() === signedInEmail);
+            
         const idMs = Number(id);
-
-        console.log("TOTAL ROWS:", rows.length);
-
-        const dataRowIndex = rows.slice(1).findIndex((row, index) => {
-            const timestamp = row[0] || "";
-
+        const targetFilteredIndex = filteredRows.findIndex((row, index) => {
+            const timestamp = rowValue(row, headerIndexes, "Timestamp");
             const rowMs = Date.parse(timestamp);
-
-            const generatedId = Number.isNaN(rowMs)
-                ? index + 1
-                : rowMs + index;
-
-            console.log(
-      "CHECKING ROW",
-      index,
-      "generatedId:",
-      generatedId,
-      "incoming:",
-      id
-    );
-
+            const generatedId = Number.isNaN(rowMs) ? index + 1 : rowMs + index;
             return generatedId === idMs;
         });
 
-        console.log("FOUND ROW:", dataRowIndex);
-
-        if (dataRowIndex === -1) {
-            return NextResponse.json(
-                { error: "Activity not found" },
-                { status: 404 }
-            );
+        if (targetFilteredIndex === -1) {
+            return NextResponse.json({ error: "Activity not found" }, { status: 404 });
         }
 
-        console.log("ROW DATA:", rows[dataRowIndex + 1]);
+        const targetRow = filteredRows[targetFilteredIndex];
+        const actualRowIndex = rows.indexOf(targetRow);
+
+        if (actualRowIndex === -1) {
+            return NextResponse.json({ error: "Activity not found in spreadsheet" }, { status: 404 });
+        }
+
+        const rowData = rows[actualRowIndex];
+        const driveFileId = rowData[13];
+
+        if (driveFileId) {
+            try {
+                await drive.files.delete({ fileId: driveFileId });
+                console.log("Deleted Drive file:", driveFileId);
+            } catch (err) {
+                console.error("Failed to delete drive file:", err);
+            }
+        }
+
+        const spreadsheetInfo = await sheets.spreadsheets.get({ spreadsheetId });
+        const sheetId = spreadsheetInfo.data.sheets?.[0]?.properties?.sheetId || 0;
+
+        await sheets.spreadsheets.batchUpdate({
+            spreadsheetId,
+            requestBody: {
+                requests: [
+                    {
+                        deleteDimension: {
+                            range: {
+                                sheetId: sheetId,
+                                dimension: "ROWS",
+                                startIndex: actualRowIndex,
+                                endIndex: actualRowIndex + 1,
+                            },
+                        },
+                    },
+                ],
+            },
+        });
 
         return NextResponse.json({
             success: true,
             deletedId: id,
-            rowIndex: dataRowIndex,
+            rowIndex: actualRowIndex,
         });
     } catch (error) {
         console.error(error);
 
         return NextResponse.json(
             { error: "Delete failed" },
+            { status: 500 }
+        );
+    }
+}
+
+export async function PUT(req: NextRequest) {
+    try {
+        const session = await getServerSession(authOptions);
+        const googleSession = session as (typeof session & GoogleSession);
+
+        if (
+            !googleSession ||
+            !googleSession.accessToken ||
+            googleSession.error ||
+            !googleSession.user?.email
+        ) {
+            return NextResponse.json(
+                { error: "Your Google session has expired. Please sign in again." },
+                { status: 401 }
+            );
+        }
+
+        const input = (await req.json()) as ActivityInput & { id?: string | number };
+        if (!input.id) {
+            return NextResponse.json({ error: "Missing activity ID" }, { status: 400 });
+        }
+
+        const data =
+            input.data && typeof input.data === "object" && !Array.isArray(input.data)
+                ? Object.fromEntries(
+                    Object.entries(input.data).map(([key, value]) => [
+                        key,
+                        asString(value),
+                    ])
+                )
+                : {};
+        const extractField = (keys: string[]) => {
+            for (const key of keys) {
+                if (data[key]) return data[key];
+            }
+            return "";
+        };
+
+        const auth = getSessionAuth(googleSession);
+        const drive = google.drive({ version: "v3", auth });
+        const sheets = google.sheets({ version: "v4", auth });
+
+        const repositoryFolderId = await findRepositoryFolderId(drive);
+        if (!repositoryFolderId) return NextResponse.json({ error: "Repository folder not found" }, { status: 404 });
+
+        const spreadsheetId = await findSpreadsheetId(drive, repositoryFolderId);
+        if (!spreadsheetId) return NextResponse.json({ error: "Spreadsheet not found" }, { status: 404 });
+
+        const valuesResponse = await sheets.spreadsheets.values.get({
+            spreadsheetId,
+            range: "Sheet1!A:R",
+        });
+
+        const rows = (valuesResponse.data.values ?? []) as string[][];
+        const headerIndexes = new Map(
+            rows[0].map((header, index) => [String(header).trim(), index])
+        );
+        const signedInEmail = googleSession.user.email.toLowerCase();
+        
+        const filteredRows = rows
+            .slice(1)
+            .filter((row) => rowValue(row, headerIndexes, "Faculty Email").toLowerCase() === signedInEmail);
+
+        const idMs = Number(input.id);
+        const targetFilteredIndex = filteredRows.findIndex((row, index) => {
+            const timestamp = rowValue(row, headerIndexes, "Timestamp");
+            const rowMs = Date.parse(timestamp);
+            const generatedId = Number.isNaN(rowMs) ? index + 1 : rowMs + index;
+            return generatedId === idMs;
+        });
+
+        if (targetFilteredIndex === -1) {
+            return NextResponse.json({ error: "Activity not found" }, { status: 404 });
+        }
+
+        const targetRow = filteredRows[targetFilteredIndex];
+        const actualRowIndex = rows.indexOf(targetRow);
+
+        if (actualRowIndex === -1) {
+            return NextResponse.json({ error: "Activity not found in spreadsheet" }, { status: 404 });
+        }
+
+        const existingRow = rows[actualRowIndex];
+
+        const updatedRow = [
+            existingRow[0] || "",
+            existingRow[1] || "",
+            existingRow[2] || "",
+            asString(input.academicYear),
+            asString(input.pmsCategory),
+            asString(input.activityType),
+            extractField(["title", "paperTitle", "courseName", "projectTitle", "activityTitle"]),
+            extractField(["role", "roleDetails", "roleInEvent", "roleName"]),
+            extractField(["quartile", "indexing", "level", "indexingType"]),
+            extractField(["duration", "dates", "date", "academicYear", "year"]),
+            extractField(["outcomes", "learningOutcomes", "achievements", "expectedOutcome"]),
+            existingRow[11] || "",
+            existingRow[12] || "",
+            existingRow[13] || "",
+            extractField(["description", "practiceDescription", "projectDescription", "details"]),
+            extractField(["remarks", "feedbackProvided", "analysis"]),
+            asString(input.pmsSection) || data.pmsSection || "",
+            JSON.stringify(data),
+        ];
+
+        await sheets.spreadsheets.values.update({
+            spreadsheetId,
+            range: `Sheet1!A${actualRowIndex + 1}:R${actualRowIndex + 1}`,
+            valueInputOption: "USER_ENTERED",
+            requestBody: { values: [updatedRow] },
+        });
+
+        return NextResponse.json({
+            success: true,
+            id: input.id,
+            updated: true
+        });
+    } catch (error: unknown) {
+        console.error("Error updating activity:", error);
+        return NextResponse.json(
+            { error: error instanceof Error ? error.message : "Update failed" },
             { status: 500 }
         );
     }
