@@ -876,10 +876,14 @@ function MyActivitiesView({
   activities,
   error,
   isLoading,
+  onEdit,
+  onDelete,
 }: {
   activities: SavedActivity[];
   error: string;
   isLoading: boolean;
+  onEdit: (activity: SavedActivity) => void;
+  onDelete: (activity: SavedActivity) => void;
 }) {
   return (
     <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
@@ -898,7 +902,7 @@ function MyActivitiesView({
       ) : activities.length ? (
         <div className="mt-5 space-y-3">
           {activities.map((item) => (
-            <ActivityListItem key={item.id} activity={item} />
+            <ActivityListItem key={item.id} activity={item} onEdit={onEdit} onDelete={onDelete} />
           ))}
         </div>
       ) : (
