@@ -27,22 +27,27 @@ export default function Header({ subtitle, title }: HeaderProps) {
 
         {/* Right side header actions */}
         <div className="hidden items-center gap-3 sm:flex">
-          {/* Encryption Badge */}
-          <div className="flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50/50 px-3 py-1 text-emerald-800">
-            <Icon name="lock" className="h-3.5 w-3.5 text-emerald-600" />
-            <span className="text-xs font-black uppercase tracking-wider">SSL Secure</span>
+          {/* Help Button */}
+          <div className="relative group">
+            <button
+              type="button"
+              onClick={() => {
+                window.open(
+                  "https://gemini.google.com/gem/1J6y4-oQtd4GOTl-_CSCjJy32if5M1ew6?usp=sharing",
+                  "_blank",
+                  "noopener,noreferrer"
+                );
+              }}
+              className="flex h-10 items-center justify-center gap-2 rounded-full border border-red-100 bg-red-50 px-4 text-red-700 shadow-sm transition hover:bg-red-100 cursor-pointer"
+              aria-label="Open AccredX Assistant"
+            >
+              <Icon name="info" className="h-5 w-5" />
+              <span className="text-sm font-bold tracking-wide">Help</span>
+            </button>
+            <div className="absolute right-0 top-full mt-2 w-max rounded-lg bg-gray-900 px-3 py-2 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity duration-200 group-hover:opacity-100 pointer-events-none z-20">
+              Need Help? Open AccredX Assistant
+            </div>
           </div>
-
-
-
-          {/* Quick Info Button */}
-          <button
-            type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-250 bg-white text-gray-600 shadow-sm transition hover:bg-red-50 hover:text-red-700"
-            aria-label="Help Documentation"
-          >
-            <Icon name="info" className="h-5 w-5" />
-          </button>
         </div>
       </div>
     </header>
