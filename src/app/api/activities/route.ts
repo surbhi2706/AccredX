@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { drive_v3, google, sheets_v4 } from "googleapis";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { readLocalActivities, writeLocalActivity, deleteLocalActivity } from "@/lib/localDb";
 
 const SHEET_NAME = "AccredX Activities";
 const REPOSITORY_NAME = "AccredX Repository";
@@ -203,16 +204,28 @@ export async function GET() {
         const auth = getSessionAuth(googleSession);
         const drive = google.drive({ version: "v3", auth });
         const sheets = google.sheets({ version: "v4", auth });
-        const repositoryFolderId = await findRepositoryFolderId(drive);
-
-        if (!repositoryFolderId) {
-            return NextResponse.json({ activities: [] });
+        let repositoryFolderId: string | undefined;
+        try {
+            repositoryFolderId = await findRepositoryFolderId(drive);
+        } catch (e) {
+            console.warn("Drive folder find failed:", e);
         }
 
-        const spreadsheetId = await findSpreadsheetId(drive, repositoryFolderId);
+        if (!repositoryFolderId) {
+            const local = readLocalActivities(googleSession.user.email);
+            return NextResponse.json({ activities: local });
+        }
+
+        let spreadsheetId: string | undefined;
+        try {
+            spreadsheetId = await findSpreadsheetId(drive, repositoryFolderId);
+        } catch (e) {
+            console.warn("Spreadsheet find failed:", e);
+        }
 
         if (!spreadsheetId) {
-            return NextResponse.json({ activities: [] });
+            const local = readLocalActivities(googleSession.user.email);
+            return NextResponse.json({ activities: local });
         }
 
         const valuesResponse = await sheets.spreadsheets.values.get({
@@ -222,7 +235,8 @@ export async function GET() {
         const rows = (valuesResponse.data.values ?? []) as string[][];
 
         if (rows.length < 2) {
-            return NextResponse.json({ activities: [] });
+            const local = readLocalActivities(googleSession.user.email);
+            return NextResponse.json({ activities: local });
         }
 
         const headerIndexes = new Map(
@@ -273,20 +287,31 @@ export async function GET() {
             })
             .reverse();
         
+        // Cache loaded activities locally
+        try {
+            for (const act of activities) {
+                writeLocalActivity(signedInEmail, act);
+            }
+        } catch (e) {
+            console.error("Failed to cache activities locally:", e);
+        }
+
         console.log("ACTIVITIES RETURNED:", activities.length);
 
         return NextResponse.json({ activities });
     } catch (error: unknown) {
-        console.error("Error loading Google Sheets activities:", error);
-        return NextResponse.json(
-            {
-                error:
-                    error instanceof Error
-                        ? error.message
-                        : "Unable to load activities from Google Sheets.",
-            },
-            { status: 500 }
-        );
+        console.error("Error loading Google Sheets activities, falling back to local:", error);
+        try {
+            const session = await getServerSession(authOptions);
+            const googleSession = session as (typeof session & GoogleSession);
+            if (googleSession?.user?.email) {
+                const local = readLocalActivities(googleSession.user.email);
+                return NextResponse.json({ activities: local });
+            }
+        } catch (localErr) {
+            console.error("Local activities fallback read failed:", localErr);
+        }
+        return NextResponse.json({ activities: [] });
     }
 }
 
@@ -341,43 +366,75 @@ export async function POST(req: NextRequest) {
         });
 
         const timestamp = new Date().toISOString();
-        await sheets.spreadsheets.values.append({
-            spreadsheetId,
-            range: "Sheet1!A:R",
-            valueInputOption: "USER_ENTERED",
-            insertDataOption: "INSERT_ROWS",
-            requestBody: {
-                values: [[
-                    timestamp,
-                    googleSession.user.email,
-                    googleSession.user.name || "Unknown Faculty",
-                    asString(input.academicYear),
-                    asString(input.pmsCategory),
-                    asString(input.activityType),
-                    extractField(["title", "paperTitle", "courseName", "projectTitle", "activityTitle"]),
-                    extractField(["role", "roleDetails", "roleInEvent", "roleName"]),
-                    extractField(["quartile", "indexing", "level", "indexingType"]),
-                    extractField(["duration", "dates", "date", "academicYear", "year"]),
-                    extractField(["outcomes", "learningOutcomes", "achievements", "expectedOutcome"]),
-                    "",
-                    "",
-                    "",
-                    extractField(["description", "practiceDescription", "projectDescription", "details"]),
-                    extractField(["remarks", "feedbackProvided", "analysis"]),
-                    asString(input.pmsSection) || data.pmsSection || "",
-                    JSON.stringify(data),
-                ]],
-            },
+        const generatedId = Date.parse(timestamp);
+        const formattedDate = new Date(timestamp).toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
         });
+
+        const newActivity = {
+            id: generatedId,
+            academicYear: asString(input.academicYear),
+            pmsCategory: asString(input.pmsCategory),
+            pmsSection: asString(input.pmsSection) || (data as any).pmsSection || "",
+            activityType: asString(input.activityType),
+            data,
+            evidenceFileName: "",
+            evidenceFileId: "",
+            createdAt: formattedDate,
+        };
+
+        // Cache activity locally
+        try {
+            writeLocalActivity(googleSession.user.email, newActivity);
+        } catch (localErr) {
+            console.error("Local activities cache save failed:", localErr);
+        }
+
+        try {
+            await sheets.spreadsheets.values.append({
+                spreadsheetId,
+                range: "Sheet1!A:R",
+                valueInputOption: "USER_ENTERED",
+                insertDataOption: "INSERT_ROWS",
+                requestBody: {
+                    values: [[
+                        timestamp,
+                        googleSession.user.email,
+                        googleSession.user.name || "Unknown Faculty",
+                        asString(input.academicYear),
+                        asString(input.pmsCategory),
+                        asString(input.activityType),
+                        extractField(["title", "paperTitle", "courseName", "projectTitle", "activityTitle"]),
+                        extractField(["role", "roleDetails", "roleInEvent", "roleName"]),
+                        extractField(["quartile", "indexing", "level", "indexingType"]),
+                        extractField(["duration", "dates", "date", "academicYear", "year"]),
+                        extractField(["outcomes", "learningOutcomes", "achievements", "expectedOutcome"]),
+                        "",
+                        "",
+                        "",
+                        extractField(["description", "practiceDescription", "projectDescription", "details"]),
+                        extractField(["remarks", "feedbackProvided", "analysis"]),
+                        asString(input.pmsSection) || data.pmsSection || "",
+                        JSON.stringify(data),
+                    ]],
+                },
+            });
+        } catch (sheetsErr) {
+            console.warn("Failed to write to Google Sheets, using local cache backup:", sheetsErr);
+            return NextResponse.json({
+                success: true,
+                id: generatedId,
+                createdAt: formattedDate,
+                warning: "Saved locally. Google Sheets was unreachable."
+            });
+        }
 
         return NextResponse.json({
             success: true,
-            id: Date.parse(timestamp),
-            createdAt: new Date(timestamp).toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-            }),
+            id: generatedId,
+            createdAt: formattedDate,
         });
     } catch (error: unknown) {
         console.error("Error saving Google Sheets activity:", error);
@@ -394,9 +451,11 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+    let id: string | null = null;
+    let googleSession: any = null;
     try {
         const session = await getServerSession(authOptions);
-        const googleSession = session as (typeof session & GoogleSession);
+        googleSession = session as (typeof session & GoogleSession);
 
         if (
             !googleSession ||
@@ -411,7 +470,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         const { searchParams } = new URL(req.url);
-        const id = searchParams.get("id");
+        id = searchParams.get("id");
 
         console.log("Deleting activity:", id);
 
@@ -516,13 +575,32 @@ console.log("DELETE TOTAL ROWS:", rows.length);
             },
         });
 
+        // Delete locally as well
+        try {
+            deleteLocalActivity(googleSession.user.email, Number(id));
+        } catch (localErr) {
+            console.error("Local activities delete cache failed:", localErr);
+        }
+
         return NextResponse.json({
             success: true,
             deletedId: id,
             rowIndex: actualRowIndex,
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error deleting from Google Sheets:", error);
+        try {
+            if (id) {
+                deleteLocalActivity(googleSession.user.email, Number(id));
+                return NextResponse.json({
+                    success: true,
+                    deletedId: id,
+                    warning: "Deleted locally. Google Sheets was unreachable."
+                });
+            }
+        } catch (localErr) {
+            console.error("Local activities fallback delete failed:", localErr);
+        }
 
         return NextResponse.json(
             { error: "Delete failed" },
@@ -636,12 +714,51 @@ export async function PUT(req: NextRequest) {
             JSON.stringify(data),
         ];
 
-        await sheets.spreadsheets.values.update({
-            spreadsheetId,
-            range: `Sheet1!A${actualRowIndex + 1}:R${actualRowIndex + 1}`,
-            valueInputOption: "USER_ENTERED",
-            requestBody: { values: [updatedRow] },
-        });
+        const updatedActivity = {
+            id: Number(input.id),
+            academicYear: asString(input.academicYear),
+            pmsCategory: asString(input.pmsCategory),
+            pmsSection: asString(input.pmsSection) || (data as any).pmsSection || "",
+            activityType: asString(input.activityType),
+            data,
+            evidenceFileName: existingRow[11] || "",
+            evidenceFileId: existingRow[12] || "",
+            createdAt: existingRow[0]
+                ? new Date(Date.parse(existingRow[0])).toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                })
+                : new Date().toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                }),
+        };
+
+        // Cache update locally
+        try {
+            writeLocalActivity(googleSession.user.email, updatedActivity);
+        } catch (localErr) {
+            console.error("Local activities cache save failed:", localErr);
+        }
+
+        try {
+            await sheets.spreadsheets.values.update({
+                spreadsheetId,
+                range: `Sheet1!A${actualRowIndex + 1}:R${actualRowIndex + 1}`,
+                valueInputOption: "USER_ENTERED",
+                requestBody: { values: [updatedRow] },
+            });
+        } catch (sheetsErr) {
+            console.warn("Failed to write to Google Sheets, using local cache backup:", sheetsErr);
+            return NextResponse.json({
+                success: true,
+                id: input.id,
+                updated: true,
+                warning: "Updated locally. Google Sheets was unreachable."
+            });
+        }
 
         return NextResponse.json({
             success: true,

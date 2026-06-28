@@ -3,6 +3,7 @@ import { drive_v3, google, sheets_v4 } from "googleapis";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getErrorMessage, getRepositoryFolder } from "@/lib/driveHelpers";
+import { readLocalProfile, writeLocalProfile } from "@/lib/localDb";
 
 const REPOSITORY_NAME = "AccredX Repository";
 const SPREADSHEET_NAME = "AccredX Activities";
@@ -163,7 +164,10 @@ export async function GET() {
             (row, index) => index > 0 && rowValue(row, headerIndexes, "Faculty Email").toLowerCase() === signedInEmail
         );
 
-        if (!profileRow) return NextResponse.json({ profile: null });
+        if (!profileRow) {
+            const local = readLocalProfile(signedInEmail);
+            return NextResponse.json({ profile: local });
+        }
 
         const profileJsonStr = rowValue(profileRow, headerIndexes, "Profile JSON");
         
@@ -197,14 +201,36 @@ export async function GET() {
             };
         }
 
+        // Cache profile locally
+        try {
+            writeLocalProfile(signedInEmail, profile);
+        } catch (e) {
+            console.error("Failed to cache profile locally:", e);
+        }
+
         return NextResponse.json({ profile });
     } catch (error: unknown) {
-        console.error("Error fetching Google Sheets profile:", error);
-        return NextResponse.json({ error: "Unable to load profile." }, { status: 500 });
+        console.error("Error fetching Google Sheets profile, falling back to local:", error);
+        try {
+            const session = await getServerSession(authOptions);
+            const googleSession = session as (typeof session & GoogleSession);
+            if (googleSession?.user?.email) {
+                const localProfile = readLocalProfile(googleSession.user.email);
+                if (localProfile) {
+                    console.log("[LOCAL FALLBACK] Successfully resolved profile from local cache.");
+                    return NextResponse.json({ profile: localProfile });
+                }
+            }
+        } catch (localErr) {
+            console.error("Local profile fallback read failed:", localErr);
+        }
+        return NextResponse.json({ profile: null });
     }
 }
 
 export async function POST(req: NextRequest) {
+    let signedInEmail = "";
+    let inputProfile: any = null;
     try {
         const session = await getServerSession(authOptions);
         const googleSession = session as (typeof session & GoogleSession);
@@ -220,7 +246,8 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const inputProfile = await req.json();
+        inputProfile = await req.json();
+        signedInEmail = googleSession.user.email.toLowerCase();
         
         const auth = getSessionAuth(googleSession);
         const drive = google.drive({ version: "v3", auth });
@@ -240,7 +267,7 @@ export async function POST(req: NextRequest) {
         const headerIndexes = new Map(
             (rows[0] || HEADERS).map((header, index) => [String(header).trim(), index])
         );
-        const signedInEmail = googleSession.user.email.toLowerCase();
+        signedInEmail = googleSession.user.email.toLowerCase();
         
         let rowIndexToUpdate = -1;
         let existingRow: string[] = [];
@@ -309,15 +336,32 @@ export async function POST(req: NextRequest) {
             });
         }
 
+        // Cache profile locally
+        try {
+            writeLocalProfile(signedInEmail, inputProfile);
+        } catch (localErr) {
+            console.error("Local profile cache save failed:", localErr);
+        }
+
         return NextResponse.json({ success: true, profile: inputProfile });
     } catch (error: unknown) {
-        console.error("Error saving profile:", error);
-        return NextResponse.json(
-            {
-                error: "Failed to save profile",
-                details: getErrorMessage(error, "Unable to save profile to Google Sheets."),
-            },
-            { status: 500 }
-        );
+        console.error("Error saving profile to Google Sheets, falling back to local:", error);
+        try {
+            writeLocalProfile(signedInEmail, inputProfile);
+            return NextResponse.json({
+                success: true,
+                profile: inputProfile,
+                warning: "Saved locally. Google Sheets was unreachable."
+            });
+        } catch (localErr) {
+            console.error("Local profile fallback write failed:", localErr);
+            return NextResponse.json(
+                {
+                    error: "Failed to save profile",
+                    details: getErrorMessage(error, "Unable to save profile."),
+                },
+                { status: 500 }
+            );
+        }
     }
 }
