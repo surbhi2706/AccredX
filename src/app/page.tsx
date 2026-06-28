@@ -898,7 +898,7 @@ function MyActivitiesView({
       ) : activities.length ? (
         <div className="mt-5 space-y-3">
           {activities.map((item) => (
-            <ActivityListItem key={item.id} activity={item} />
+            <ActivityListItem key={item.id} activity={item} onEdit={() => {}} onDelete={() => {}} />
           ))}
         </div>
       ) : (

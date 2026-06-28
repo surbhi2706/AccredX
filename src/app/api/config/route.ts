@@ -73,7 +73,11 @@ function getServiceAccountAuth() {
     return new google.auth.JWT({
         email,
         key,
-        scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+        scopes: [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/spreadsheets.readonly",
+            "https://www.googleapis.com/auth/drive.readonly",
+        ],
     });
 }
 

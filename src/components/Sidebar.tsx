@@ -9,7 +9,7 @@ export type ViewId =
   | "profile"
   | "timeline"
   | "course-activity-hub"
-    "admin";
+  | "admin";
 
 type SidebarProps = {
   activeView: ViewId;
