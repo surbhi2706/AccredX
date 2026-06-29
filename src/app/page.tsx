@@ -23,6 +23,7 @@ import LoginScreen from "@/components/LoginScreen";
 import type { UserProfile } from "@/components/LoginScreen";
 import ReportPreviewModal from "@/components/ReportPreviewModal";
 import CvPreviewModal from "@/components/CvPreviewModal";
+import PortfolioWebsiteModal from "@/components/PortfolioWebsiteModal";
 import ProfileForm from "@/components/ProfileForm";
 import TimelineView from "@/components/TimelineView";
 import CourseActivityHubView from "@/components/CourseActivityHubView";
@@ -85,7 +86,7 @@ export default function Home() {
   const academicYears = getAcademicYears();
 console.log("PAGE YEARS:", academicYears);
   const [previewReportType, setPreviewReportType] = useState<
-    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | null
+    "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | "Portfolio Website" | null
   >(null);
 
   const [activeView, setActiveView] = useState<ViewId>("add-activity");
@@ -516,7 +517,7 @@ console.log("PAGE YEARS:", academicYears);
           ) : null}
 
           {activeView === "profile" ? (
-            <ProfileForm user={currentUser} onSave={(p) => setSavedProfile(p)} />
+            <ProfileForm user={currentUser} profile={savedProfile} onSave={(p) => setSavedProfile(p)} />
           ) : null}
 
           {activeView === "timeline" ? (
@@ -533,7 +534,7 @@ console.log("PAGE YEARS:", academicYears);
         </main>
       </div>
 
-      {previewReportType && previewReportType !== "Somaiya CV" && previewReportType !== "Somaiya CV (Generalized)" && (
+      {previewReportType && previewReportType !== "Somaiya CV" && previewReportType !== "Somaiya CV (Generalized)" && previewReportType !== "Portfolio Website" && (
         <ReportPreviewModal
           reportType={previewReportType}
           activities={savedActivities}
@@ -547,6 +548,14 @@ console.log("PAGE YEARS:", academicYears);
           profile={savedProfile}
           activities={savedActivities}
           variant={previewReportType === "Somaiya CV (Generalized)" ? "generalized" : "standard"}
+          onClose={() => setPreviewReportType(null)}
+        />
+      )}
+
+      {previewReportType === "Portfolio Website" && (
+        <PortfolioWebsiteModal
+          profile={savedProfile}
+          activities={savedActivities}
           onClose={() => setPreviewReportType(null)}
         />
       )}
@@ -919,7 +928,7 @@ function ReportsView({
 }: {
   activities: SavedActivity[];
   evidenceUploads: number;
-  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)") => void;
+  onPreview: (reportType: "PMS Report" | "NBA Summary" | "Annual Report" | "Somaiya CV" | "Somaiya CV (Generalized)" | "Portfolio Website") => void;
 }) {
   const reportCards = [
     { title: "PMS Report", icon: "layers", color: "text-red-600 bg-red-50" },
@@ -927,6 +936,7 @@ function ReportsView({
     { title: "Annual Report", icon: "chart", color: "text-violet-650 bg-violet-50" },
     { title: "Somaiya CV", icon: "file", color: "text-sky-600 bg-sky-50" },
     { title: "Somaiya CV (Generalized)", icon: "clipboard", color: "text-emerald-600 bg-emerald-50" },
+    { title: "Portfolio Website", icon: "grid", color: "text-blue-600 bg-blue-50" },
   ] as const;
 
   return (

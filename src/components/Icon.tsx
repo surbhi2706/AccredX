@@ -22,6 +22,7 @@ type IconProps = {
     | "trash"
     | "upload"
     | "user"
+    | "camera"
     | "history";
   className?: string;
 };
@@ -171,6 +172,12 @@ const paths: Record<IconProps["name"], ReactNode> = {
     <>
       <path d="M20 21a8 8 0 0 0-16 0" />
       <circle cx="12" cy="7" r="4" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M5 7h3l2-2h4l2 2h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+      <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" />
     </>
   ),
 };

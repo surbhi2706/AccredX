@@ -13,7 +13,16 @@ export function getErrorStatus(error: unknown): number | undefined {
 }
 
 export function getErrorMessage(error: unknown, fallback: string): string {
-    return error instanceof Error ? error.message : fallback;
+    if (error && typeof error === "object") {
+        const anyError = error as any;
+        if (anyError.response?.data?.error?.message) {
+            return anyError.response.data.error.message;
+        }
+        if (anyError.message) {
+            return anyError.message;
+        }
+    }
+    return fallback;
 }
 
 export async function getOrCreateFolder(

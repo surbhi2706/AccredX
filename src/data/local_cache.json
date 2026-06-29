@@ -1,0 +1,232 @@
+{
+    "profiles": {
+        "surbhi.sanghal@somaiya.edu": {
+            "fullName": "SURBHI SANGHAL",
+            "employeeId": "FAC-0000",
+            "designation": "Professor",
+            "department": "IT",
+            "schoolInstitute": "KJSSE",
+            "officialEmail": "surbhi.sanghal@somaiya.edu",
+            "alternateEmail": "",
+            "phoneNumber": "",
+            "officeAddress": "",
+            "dateOfJoining": "2026-06-05",
+            "careerExperience": "",
+            "industryExperience": "",
+            "teachingExperience": "",
+            "administrativeDesignation": "",
+            "profilePictureUrl": "/api/profile-photo?id=1GeCdLlM1P8_cTYpumPuJ3cyq_yyM1nsx",
+            "linkedinUrl": "https://www.linkedin.com",
+            "education": [
+                {
+                    "examination": "Ph.D",
+                    "degree": "",
+                    "university": "",
+                    "institute": "",
+                    "yearOfPassing": "",
+                    "cgpaOrPercentage": ""
+                },
+                {
+                    "examination": "PG",
+                    "degree": "",
+                    "university": "",
+                    "institute": "",
+                    "yearOfPassing": "",
+                    "cgpaOrPercentage": ""
+                },
+                {
+                    "examination": "UG",
+                    "degree": "btech information technology",
+                    "university": "somaiya vidyavihar university",
+                    "institute": "kjsse",
+                    "yearOfPassing": "2018",
+                    "cgpaOrPercentage": "9.25"
+                },
+                {
+                    "examination": "Diploma",
+                    "degree": "",
+                    "university": "",
+                    "institute": "",
+                    "yearOfPassing": "",
+                    "cgpaOrPercentage": ""
+                },
+                {
+                    "examination": "NET/SET/Other",
+                    "degree": "",
+                    "university": "",
+                    "institute": "",
+                    "yearOfPassing": "",
+                    "cgpaOrPercentage": ""
+                }
+            ]
+        }
+    },
+    "activities": {
+        "surbhi.sanghal@somaiya.edu": [
+            {
+                "id": 1782722455348,
+                "academicYear": "2024-25",
+                "pmsCategory": "Institution Building & Professional Development",
+                "pmsSection": "Student Activities / Events Organized",
+                "activityType": "Hackathon Organized",
+                "data": {
+                    "detailedActivity": "Hackathon Organized",
+                    "pmsSection": "Student Activities / Events Organized",
+                    "nbaCriterion": "Criterion 4",
+                    "nbaSubCriterion": "4.1 Student Performance",
+                    "hackathonName": "sdfvb",
+                    "dates": "23-06-2026",
+                    "participants": "345",
+                    "selfAssessedMarks": "43"
+                },
+                "evidenceFileName": "em exp 10.docx",
+                "evidenceFileId": "1JSHrfC9nr4_Yzq_8Z9RxoS1YVN3S2yg5",
+                "createdAt": "29 Jun 2026"
+            },
+            {
+                "id": 1782717563572,
+                "academicYear": "2025-26",
+                "pmsCategory": "Research & Academic Contributions",
+                "pmsSection": "Conference Publications & Participation",
+                "activityType": "Conference Abstract Publication",
+                "data": {
+                    "detailedActivity": "Conference Abstract Publication",
+                    "pmsSection": "Conference Publications & Participation",
+                    "nbaCriterion": "Criterion 5",
+                    "nbaSubCriterion": "5.2 Faculty Research & Publications",
+                    "abstractTitle": "vbnm",
+                    "conferenceName": "vbnm",
+                    "year": "2026",
+                    "selfAssessedMarks": "45"
+                },
+                "evidenceFileName": "EEEE IA.docx",
+                "evidenceFileId": "1FikxR_KaJE74RyFoIQl_6eEILXaZSA06",
+                "createdAt": "29 Jun 2026"
+            },
+            {
+                "id": 1782667563394,
+                "academicYear": "2025-26",
+                "pmsCategory": "Teaching, Learning & Evaluation",
+                "pmsSection": "Curriculum Development",
+                "activityType": "BOS Participation",
+                "data": {
+                    "detailedActivity": "BOS Participation",
+                    "pmsSection": "Curriculum Development",
+                    "nbaCriterion": "Criterion 2",
+                    "nbaSubCriterion": "2.2 Program Curriculum",
+                    "bosTitle": "bnm",
+                    "role": "Chairperson",
+                    "contribution": "bn",
+                    "year": "2026",
+                    "selfAssessedMarks": "43"
+                },
+                "evidenceFileName": "EEEE IA.docx",
+                "evidenceFileId": "1PzqfAUwQ6bjXo_byIlysCGB-ER-2y_mm",
+                "createdAt": "28 Jun 2026"
+            },
+            {
+                "id": 1781854435304,
+                "academicYear": "2024-25",
+                "pmsCategory": "Teaching, Learning & Evaluation",
+                "pmsSection": "Teaching Innovation",
+                "activityType": "Outcome-based Teaching Practice",
+                "data": {
+                    "detailedActivity": "Outcome-based Teaching Practice",
+                    "pmsSection": "Teaching Innovation",
+                    "nbaCriterion": "Criterion 3",
+                    "nbaSubCriterion": "3.1 Student Performance",
+                    "practiceDescription": "vbn",
+                    "courseName": "ghj",
+                    "associatedOutcomes": "bnm",
+                    "selfAssessedMarks": "45"
+                },
+                "evidenceFileName": "ep virtual lab.docx",
+                "evidenceFileId": "1-VykKHO13ZS-bCeAga1a_xlEtYTMT_cd",
+                "createdAt": "19 Jun 2026"
+            },
+            {
+                "id": 1781853622755,
+                "academicYear": "2024-25",
+                "pmsCategory": "Institution Building & Professional Development",
+                "pmsSection": "Student Activities / Events Organized",
+                "activityType": "Field Work Activity",
+                "data": {
+                    "detailedActivity": "Field Work Activity",
+                    "pmsSection": "Student Activities / Events Organized",
+                    "nbaCriterion": "Criterion 4",
+                    "nbaSubCriterion": "4.1 Student Performance",
+                    "activityTitle": "vbnm",
+                    "location": "vbnm",
+                    "duration": "67",
+                    "learningOutcomes": "vbn",
+                    "selfAssessedMarks": "47"
+                },
+                "evidenceFileName": "ep virtual lab.docx",
+                "evidenceFileId": "1D1G5GNhLXoaDszoDuNgxbPQveOYVcHZ2",
+                "createdAt": "19 Jun 2026"
+            },
+            {
+                "id": 1781853584833,
+                "academicYear": "2024-25",
+                "pmsCategory": "Research & Academic Contributions",
+                "pmsSection": "Journal Publications",
+                "activityType": "Web of Science Publication",
+                "data": {
+                    "detailedActivity": "Web of Science Publication",
+                    "pmsSection": "Journal Publications",
+                    "nbaCriterion": "Criterion 5",
+                    "nbaSubCriterion": "5.2 Faculty Research & Publications",
+                    "paperTitle": "ghj",
+                    "journalName": "cvbnm",
+                    "doi": "nm",
+                    "publicationYear": "2025",
+                    "selfAssessedMarks": "45"
+                },
+                "evidenceFileName": "e waste final.docx",
+                "evidenceFileId": "1ZsBYUNlV3aqE6sSdAoEty12BZ8rswfQu",
+                "createdAt": "19 Jun 2026"
+            },
+            {
+                "id": 1781853528600,
+                "academicYear": "2025-26",
+                "pmsCategory": "Skill Enhancement & Miscellaneous",
+                "pmsSection": "FDP / Training Programs Attended",
+                "activityType": "STTP Attended",
+                "data": {
+                    "detailedActivity": "STTP Attended",
+                    "pmsSection": "FDP / Training Programs Attended",
+                    "nbaCriterion": "Criterion 6",
+                    "nbaSubCriterion": "6.3 Faculty Development",
+                    "sttpTitle": "vb",
+                    "organizer": "vbnm",
+                    "dates": "23-06-2026",
+                    "selfAssessedMarks": "50"
+                },
+                "evidenceFileName": "EEEE IA.docx",
+                "evidenceFileId": "1GZWUKnf9QUakgPKoFt-ZjpEYAVQyrsj_",
+                "createdAt": "19 Jun 2026"
+            },
+            {
+                "id": 1781850351446,
+                "academicYear": "2025-26",
+                "pmsCategory": "Teaching, Learning & Evaluation",
+                "pmsSection": "Curriculum Development",
+                "activityType": "Course Revision / Upgradation",
+                "data": {
+                    "detailedActivity": "Course Revision / Upgradation",
+                    "pmsSection": "Curriculum Development",
+                    "nbaCriterion": "Criterion 2",
+                    "nbaSubCriterion": "2.2 Program Curriculum",
+                    "courseName": "fgh",
+                    "previousVersion": "vbn",
+                    "academicYear": "2026",
+                    "revisionsApplied": "sdv",
+                    "selfAssessedMarks": "80"
+                },
+                "evidenceFileName": "DiS virtual lab.docx",
+                "evidenceFileId": "1B-w_9u4HPGGt5WSi5K3p2GWRIZwVa7_4",
+                "createdAt": "19 Jun 2026"
+            }
+        ]
+    }
+}

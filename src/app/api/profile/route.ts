@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { drive_v3, google, sheets_v4 } from "googleapis";
+import fs from "fs";
+import os from "os";
+import path from "path";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { getErrorMessage, getRepositoryFolder } from "@/lib/driveHelpers";
+import { getErrorMessage, getOrCreateFolder, getRepositoryFolder } from "@/lib/driveHelpers";
 import { readLocalProfile, writeLocalProfile } from "@/lib/localDb";
 
 const REPOSITORY_NAME = "AccredX Repository";
@@ -26,6 +29,8 @@ const HEADERS = [
     "Career Experience",
     "Industry Experience",
     "Teaching Experience",
+    "LinkedIn URL",
+    "Profile Photo",
     "Profile JSON",
 ];
 
@@ -127,6 +132,97 @@ function rowValue(row: string[], headerIndexes: Map<string, number>, header: str
     return index === undefined ? "" : String(row[index] ?? "");
 }
 
+function getDriveFileIdFromUrl(profilePictureUrl: string): string | null {
+    if (!profilePictureUrl) return null;
+    const viewMatch = profilePictureUrl.match(/\/file\/d\/([^/]+)\/view(?:\?.*)?$/);
+    if (viewMatch) {
+        return viewMatch[1];
+    }
+
+    const idMatch = profilePictureUrl.match(/[?&]id=([^&]+)/);
+    if (idMatch) {
+        return idMatch[1];
+    }
+
+    const downloadMatch = profilePictureUrl.match(/drive\.(?:google\.com|usercontent\.google\.com|googleusercontent\.com)\/download\?id=([^&]+)/);
+    if (downloadMatch) {
+        return downloadMatch[1];
+    }
+
+    const directMatch = profilePictureUrl.match(/lh3\.googleusercontent\.com\/d\/([^/]+)/);
+    if (directMatch) {
+        return directMatch[1];
+    }
+
+    return null;
+}
+
+function getProfilePhotoProxyUrl(fileId: string): string {
+    return `/api/profile-photo?id=${encodeURIComponent(fileId)}`;
+}
+
+function normalizeProfilePictureUrl(profilePictureUrl: string): string {
+    if (!profilePictureUrl) return profilePictureUrl;
+    if (profilePictureUrl.startsWith("/api/profile-photo")) return profilePictureUrl;
+    const fileId = getDriveFileIdFromUrl(profilePictureUrl);
+    if (fileId) {
+        return getProfilePhotoProxyUrl(fileId);
+    }
+    return profilePictureUrl;
+}
+
+async function uploadProfilePhoto(
+    drive: drive_v3.Drive,
+    repositoryFolderId: string,
+    profilePictureUrl: string,
+    signedInEmail: string
+): Promise<string> {
+    const match = profilePictureUrl.match(/^data:(image\/[^;]+);base64,(.+)$/);
+    if (!match) return normalizeProfilePictureUrl(profilePictureUrl);
+
+    const mimeType = match[1];
+    const base64Data = match[2];
+    const extension = mimeType.split("/")[1] || "png";
+    const fileName = `profile-photo-${signedInEmail.replace(/[^a-zA-Z0-9]/g, "-")}-${Date.now()}.${extension}`;
+
+    const profilePhotoFolderId = await getOrCreateFolder(drive, "Profile Photos", repositoryFolderId);
+    const buffer = Buffer.from(base64Data, "base64");
+    const tempPath = path.join(os.tmpdir(), fileName);
+    fs.writeFileSync(tempPath, buffer);
+
+    const response = await drive.files.create({
+        requestBody: {
+            name: fileName,
+            parents: [profilePhotoFolderId],
+        },
+        media: {
+            mimeType,
+            body: fs.createReadStream(tempPath),
+        },
+        supportsAllDrives: true,
+    });
+
+    fs.unlinkSync(tempPath);
+
+    const driveFileId = response.data.id;
+    if (!driveFileId) return profilePictureUrl;
+
+    try {
+        await drive.permissions.create({
+            fileId: driveFileId,
+            requestBody: {
+                role: "reader",
+                type: "anyone",
+            },
+            supportsAllDrives: true,
+        });
+    } catch (permissionError) {
+        console.error("Failed to set Drive sharing permissions:", permissionError);
+    }
+
+    return getProfilePhotoProxyUrl(driveFileId);
+}
+
 export async function GET() {
     try {
         const session = await getServerSession(authOptions);
@@ -197,8 +293,14 @@ export async function GET() {
                 industryExperience: rowValue(profileRow, headerIndexes, "Industry Experience"),
                 teachingExperience: rowValue(profileRow, headerIndexes, "Teaching Experience"),
                 administrativeDesignation: rowValue(profileRow, headerIndexes, "Administrative Designation"),
+                linkedinUrl: rowValue(profileRow, headerIndexes, "LinkedIn URL"),
+                profilePictureUrl: normalizeProfilePictureUrl(rowValue(profileRow, headerIndexes, "Profile Photo")),
                 education: [], // Without JSON, education is lost. That's why Profile JSON is critical.
             };
+        }
+
+        if (profile?.profilePictureUrl) {
+            profile.profilePictureUrl = normalizeProfilePictureUrl(profile.profilePictureUrl);
         }
 
         // Cache profile locally
@@ -258,6 +360,19 @@ export async function POST(req: NextRequest) {
 
         await ensureProfileSheetExists(sheets, spreadsheetId);
 
+        if (inputProfile?.profilePictureUrl) {
+            try {
+                inputProfile.profilePictureUrl = await uploadProfilePhoto(
+                    drive,
+                    repositoryFolderId,
+                    inputProfile.profilePictureUrl,
+                    signedInEmail
+                );
+            } catch (photoError) {
+                console.error("Profile photo upload failed:", photoError);
+            }
+        }
+
         const valuesResponse = await sheets.spreadsheets.values.get({
             spreadsheetId,
             range: `${SHEET_NAME}!A:Q`,
@@ -308,6 +423,8 @@ export async function POST(req: NextRequest) {
             updateField("Career Experience", inputProfile.careerExperience);
             updateField("Industry Experience", inputProfile.industryExperience);
             updateField("Teaching Experience", inputProfile.teachingExperience);
+            updateField("LinkedIn URL", inputProfile.linkedinUrl);
+            updateField("Profile Photo", inputProfile.profilePictureUrl);
             updateField("Profile JSON", JSON.stringify(inputProfile));
 
             return newRow;

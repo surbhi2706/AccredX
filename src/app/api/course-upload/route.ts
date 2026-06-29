@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
                     return NextResponse.json(
                         {
                             error:
-                                "The configured Google Drive repository is unavailable. Share it with the signed-in account, verify GOOGLE_DRIVE_FOLDER_ID, then sign out and sign in again.",
+                                `The configured Google Drive repository is unavailable. Share it with the signed-in account, verify GOOGLE_DRIVE_FOLDER_ID, then sign out and sign in again. (Details: ${getErrorMessage(folderError, "Unknown error")})`,
                         },
                         { status: 403 }
                     );

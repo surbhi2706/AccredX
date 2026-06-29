@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { FacultyProfile, EducationEntry } from "@/types/profile";
 import type { UserProfile } from "@/components/LoginScreen";
 import EducationSection from "./EducationSection";
@@ -6,6 +6,7 @@ import Icon from "./Icon";
 
 type ProfileFormProps = {
   user: UserProfile;
+  profile?: FacultyProfile | null;
   onSave?: (profile: FacultyProfile) => void;
 };
 
@@ -24,6 +25,8 @@ const defaultProfile: FacultyProfile = {
   industryExperience: "",
   teachingExperience: "",
   administrativeDesignation: "",
+  profilePictureUrl: "",
+  linkedinUrl: "",
   education: [
     { examination: "Ph.D", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
     { examination: "PG", degree: "", university: "", institute: "", yearOfPassing: "", cgpaOrPercentage: "" },
@@ -119,14 +122,23 @@ function Field({
   );
 }
 
-export default function ProfileForm({ user, onSave }: ProfileFormProps) {
+export default function ProfileForm({ user, profile: initialProfile, onSave }: ProfileFormProps) {
   const [profile, setProfile] = useState<FacultyProfile>(defaultProfile);
   const [isSaved, setIsSaved] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
+    if (!initialProfile) return;
+    setProfile((prev) => ({ ...prev, ...initialProfile }));
+    setIsLoaded(true);
+  }, [initialProfile]);
+
+  useEffect(() => {
+    if (initialProfile) return;
+
     const fetchProfile = async () => {
       try {
         const res = await fetch("/api/profile");
@@ -164,12 +176,32 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
     };
 
     fetchProfile();
-  }, [user]);
+  }, [user, initialProfile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setProfile((prev) => ({ ...prev, [name]: value }));
     setIsSaved(false);
+  };
+
+  const openPicturePicker = () => {
+    if (!fileInputRef.current) return;
+    fileInputRef.current.click();
+  };
+
+  const handlePictureSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string | null;
+      if (result) {
+        setProfile((prev) => ({ ...prev, profilePictureUrl: result }));
+        setIsSaved(false);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSave = async () => {
@@ -180,15 +212,17 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(profile),
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
+        const savedProfile = data.profile || profile;
+        setProfile(savedProfile);
         setIsSaved(true);
         setIsEditingProfile(false);
         if (onSave) {
-          onSave(profile);
+          onSave(savedProfile);
         }
         setTimeout(() => setIsSaved(false), 3000);
       } else {
-        const data = await res.json().catch(() => ({}));
         const message =
           data.error === "Unauthorized" || res.status === 401
             ? data.error || "Your Google session expired. Sign out and sign in again."
@@ -240,8 +274,34 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
         <div className="border-b border-red-100 bg-gradient-to-r from-red-600 to-red-500 px-6 py-7 text-white md:px-8">
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-red-600 shadow-lg">
-                <Icon name="user" className="h-7 w-7" />
+              <div className="relative">
+                <button
+                  type={isEditingProfile ? "button" : "button"}
+                  onClick={isEditingProfile ? openPicturePicker : undefined}
+                  className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-red-600 shadow-lg transition hover:scale-105"
+                >
+                  {profile.profilePictureUrl ? (
+                    <img
+                      src={profile.profilePictureUrl}
+                      alt={`${profile.fullName || "Profile"} picture`}
+                      className="h-full w-full rounded-2xl object-cover"
+                    />
+                  ) : (
+                    <Icon name="user" className="h-7 w-7" />
+                  )}
+                </button>
+                {isEditingProfile && (
+                  <div className="pointer-events-none absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-red-600 text-white shadow-md">
+                    <Icon name="camera" className="h-4 w-4" />
+                  </div>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePictureSelect}
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-black tracking-tight">
@@ -249,7 +309,7 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
                 </h2>
                 <p className="mt-1 text-sm font-semibold text-red-100">
                   {isEditingProfile
-                    ? "Update your personal and academic information."
+                    ? "Update your personal and academic information. Click the avatar to change it."
                     : "Review your personal and academic information."}
                 </p>
               </div>
@@ -320,6 +380,14 @@ export default function ProfileForm({ user, onSave }: ProfileFormProps) {
                 name="dateOfJoining"
                 type="date"
                 value={profile.dateOfJoining}
+                isEditing={isEditingProfile}
+                onChange={handleChange}
+              />
+              <Field
+                label="LinkedIn URL"
+                name="linkedinUrl"
+                type="url"
+                value={profile.linkedinUrl || ""}
                 isEditing={isEditingProfile}
                 onChange={handleChange}
               />

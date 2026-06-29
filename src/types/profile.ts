@@ -22,6 +22,8 @@ export type FacultyProfile = {
   industryExperience?: string;
   teachingExperience?: string;
   administrativeDesignation?: string;
+  profilePictureUrl?: string;
+  linkedinUrl?: string;
   education: EducationEntry[];
 };
 

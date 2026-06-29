@@ -768,7 +768,7 @@ export default function CvPreviewModal({ profile, activities, onClose, variant =
       `}</style>
 
       <div className="relative flex h-full max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-red-100 bg-slate-100 shadow-2xl print:border-none print:shadow-none print:w-full print:max-w-none print:h-auto print:max-h-none print:overflow-visible print:bg-transparent">
-        <header className="flex flex-col gap-4 border-b border-gray-150 bg-white px-6 py-4 md:flex-row md:items-center md:justify-between print:hidden">
+        <header className="flex flex-col gap-4 bg-white px-6 py-4 md:flex-row md:items-center md:justify-between print:hidden">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-55 text-red-600">
               <Icon name="file" className="h-5 w-5" />
