@@ -798,10 +798,24 @@ function DashboardView({
   onEdit: (activity: SavedActivity) => void;
   onDelete: (activity: SavedActivity) => void;
 }) {
-  const latestActivities = activities.slice(0, 4);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterYear, setFilterYear] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+
   const progress = activities.length
     ? Math.min(100, Math.round((evidenceUploads / activities.length) * 100))
     : 0;
+
+  const academicYears = Array.from(new Set(activities.map((a) => a.academicYear))).sort().reverse();
+  const categories = Array.from(new Set(activities.map((a) => a.pmsCategory))).sort();
+
+  const filteredActivities = activities.filter((item) => {
+    const matchesSearch = item.activityType.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          item.pmsCategory.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesYear = filterYear ? item.academicYear === filterYear : true;
+    const matchesCategory = filterCategory ? item.pmsCategory === filterCategory : true;
+    return matchesSearch && matchesYear && matchesCategory;
+  });
 
   return (
     <div className="space-y-6">
@@ -858,21 +872,65 @@ function DashboardView({
       </section>
 
       <section className="rounded-3xl border border-red-100 bg-white p-6 shadow-[0_20px_60px_rgba(127,29,29,0.06)]">
-        <h2 className="text-xl font-black tracking-tight text-gray-950">
-          Recent Activity
-        </h2>
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-xl font-black tracking-tight text-gray-950">
+              Your Activities
+            </h2>
+            <p className="mt-1 text-sm text-gray-500">
+              Search and filter your saved activities.
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="relative w-full sm:w-auto">
+              <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
+                <Icon name="search" className="h-4 w-4" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search activities..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-red-400 focus:bg-white"
+              />
+            </div>
+            
+            <select
+              value={filterYear}
+              onChange={(e) => setFilterYear(e.target.value)}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none transition focus:border-red-400 focus:bg-white cursor-pointer"
+            >
+              <option value="">All Years</option>
+              {academicYears.map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+            
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm font-semibold text-gray-700 outline-none transition focus:border-red-400 focus:bg-white cursor-pointer max-w-[200px] truncate"
+            >
+              <option value="">All Categories</option>
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-        {latestActivities.length ? (
-          <div className="mt-5 space-y-3">
-            {latestActivities.map((item) => (
+        {filteredActivities.length ? (
+          <div className="space-y-3">
+            {filteredActivities.map((item) => (
               <ActivityListItem key={item.id} activity={item} onEdit={onEdit} onDelete={onDelete}/>
             ))}
           </div>
         ) : (
           <EmptyState
             icon="file"
-            title="No activity uploaded yet"
-            text="Saved activities will appear here."
+            title="No matching activities"
+            text={activities.length ? "Try adjusting your search or filters." : "Saved activities will appear here."}
           />
         )}
       </section>
