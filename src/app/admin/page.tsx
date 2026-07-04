@@ -5,7 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import LoginScreen from "@/components/LoginScreen";
 import Icon from "@/components/Icon";
 
-const TABS = ["Categories", "Activities", "Fields", "AcademicYears"] as const;
+const TABS = ["Categories", "Activities", "Fields", "AcademicYears", "CourseActivities"] as const;
 type TabName = (typeof TABS)[number];
 
 const TAB_COPY: Record<TabName, { label: string; hint: string }> = {
@@ -25,9 +25,47 @@ const TAB_COPY: Record<TabName, { label: string; hint: string }> = {
     label: "Academic Years",
     hint: "Columns: Year (e.g. 2021-22)",
   },
+  CourseActivities: {
+    label: "Course Activities",
+    hint: "Rows from the Course Activities tab in the AccredX Activities sheet",
+  },
 };
 
-type RawRows = Record<TabName, Record<string, string>[]>;
+type RawRows = Partial<Record<TabName, Record<string, string>[]>>;
+
+const COURSE_ACTIVITY_HEADERS = [
+  "Record ID",
+  "Timestamp",
+  "Faculty Email",
+  "Faculty Name",
+  "Academic Year",
+  "Branch",
+  "Semester",
+  "Course Name",
+  "Course Code",
+  "Document Category",
+  "Document Type",
+  "Evidence File Name",
+  "Drive File URL",
+  "Drive File ID",
+  "Metadata JSON",
+  "Resource Type",
+  "External URL",
+];
+
+const COURSE_ACTIVITY_EDIT_HEADERS = [
+  "Academic Year",
+  "Branch",
+  "Semester",
+  "Course Name",
+  "Course Code",
+  "Document Category",
+  "Document Type",
+  "Evidence File Name",
+  "Resource Type",
+  "External URL",
+  "Metadata JSON",
+];
 
 export default function AdminPage() {
   const { data: session, status } = useSession();
@@ -101,6 +139,9 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
   const [statusMessage, setStatusMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [courseRows, setCourseRows] = useState<Record<string, string>[]>([]);
+  const [editingCourseRow, setEditingCourseRow] = useState<Record<string, string> | null>(null);
+  const [courseEditValues, setCourseEditValues] = useState<Record<string, string>>({});
 
   async function loadConfig() {
     setIsLoading(true);
@@ -122,13 +163,34 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
     }
   }
 
+  async function loadCourseActivities() {
+    try {
+      const res = await fetch("/api/admin/course-activities", { cache: "no-store" });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Could not load course activities.");
+      setCourseRows(Array.isArray(json.rows) ? json.rows : []);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Could not load course activities.");
+    }
+  }
+
+  async function loadAdminData() {
+    setIsLoading(true);
+    setLoadError("");
+    await Promise.all([loadConfig(), loadCourseActivities()]);
+    setIsLoading(false);
+  }
+
   useEffect(() => {
-    loadConfig();
+    loadAdminData();
   }, []);
 
-  const rows = rawRows?.[activeTab] ?? [];
+  const isCourseActivitiesTab = activeTab === "CourseActivities";
+  const rows = isCourseActivitiesTab ? courseRows : rawRows?.[activeTab] ?? [];
   const headers =
-    rows.length > 0
+    isCourseActivitiesTab
+      ? COURSE_ACTIVITY_HEADERS
+      : rows.length > 0
       ? Object.keys(rows[0])
       : activeTab === "AcademicYears"
       ? ["Year"]
@@ -156,6 +218,8 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
   function switchTab(tab: TabName) {
     setActiveTab(tab);
     setFormValues({});
+    setEditingCourseRow(null);
+    setCourseEditValues({});
     setStatusMessage("");
   }
 
@@ -179,7 +243,7 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
 
       setFormValues({});
       setStatusMessage("Row added. It's now live for every user.");
-      await loadConfig();
+      await loadAdminData();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Could not add row.");
     } finally {
@@ -189,32 +253,74 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
 
   async function handleDeleteRow(row: Record<string, string>) {
     const confirmed = window.confirm(
-      "Delete this row? It will disappear from the live site for every user."
+      isCourseActivitiesTab
+        ? "Delete this course activity row? It will disappear from the Course Activity Hub for the faculty user."
+        : "Delete this row? It will disappear from the live site for every user."
     );
     if (!confirmed) return;
 
     setIsSubmitting(true);
     setStatusMessage("Deleting row...");
     try {
-      const matchCriteria: Record<string, string> = {};
-      // Match on every non-empty cell so we hit the exact row, not a partial.
-      headers.forEach((header) => {
-        if (row[header]?.trim()) matchCriteria[header] = row[header];
-      });
-
-      const res = await fetch(
-        `/api/config?tab=${encodeURIComponent(activeTab)}&match=${encodeURIComponent(
-          JSON.stringify(matchCriteria)
-        )}`,
-        { method: "DELETE" }
-      );
+      const res = isCourseActivitiesTab
+        ? await fetch(`/api/admin/course-activities?id=${encodeURIComponent(row["Record ID"] || "")}`, { method: "DELETE" })
+        : await fetch(
+            `/api/config?tab=${encodeURIComponent(activeTab)}&match=${encodeURIComponent(
+              JSON.stringify(
+                headers.reduce<Record<string, string>>((matchCriteria, header) => {
+                  if (row[header]?.trim()) matchCriteria[header] = row[header];
+                  return matchCriteria;
+                }, {})
+              )
+            )}`,
+            { method: "DELETE" }
+          );
       const result = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(result.error || "Could not delete row.");
 
       setStatusMessage("Row deleted.");
-      await loadConfig();
+      await loadAdminData();
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Could not delete row.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  function handleEditCourseRow(row: Record<string, string>) {
+    setEditingCourseRow(row);
+    setCourseEditValues(
+      COURSE_ACTIVITY_EDIT_HEADERS.reduce<Record<string, string>>((values, header) => {
+        values[header] = row[header] || "";
+        return values;
+      }, {})
+    );
+    setStatusMessage("");
+  }
+
+  async function handleSaveCourseRow() {
+    if (!editingCourseRow?.["Record ID"]) return;
+
+    setIsSubmitting(true);
+    setStatusMessage("Updating course activity...");
+    try {
+      const res = await fetch("/api/admin/course-activities", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recordId: editingCourseRow["Record ID"],
+          row: courseEditValues,
+        }),
+      });
+      const result = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(result.error || "Could not update course activity.");
+
+      setEditingCourseRow(null);
+      setCourseEditValues({});
+      setStatusMessage("Course activity updated.");
+      await loadAdminData();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Could not update course activity.");
     } finally {
       setIsSubmitting(false);
     }
@@ -253,7 +359,7 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
 
       <main className="mx-auto max-w-5xl px-6 py-8 md:px-8">
         <p className="mb-6 text-sm font-medium text-gray-500">
-          Add or remove categories, activities, form fields, and academic years.
+          Add or remove categories, activities, form fields, and academic years. Review and maintain Course Activity Hub evidence records.
           Changes save to the live config sheet and apply to every signed-in user immediately — no code changes or redeploys needed.
         </p>
 
@@ -284,7 +390,8 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
           <p className="text-sm font-medium text-gray-500">Loading live config…</p>
         ) : (
           <>
-            {/* Add row */}
+            {/* Add row / edit course activity */}
+            {!isCourseActivitiesTab ? (
             <div className="mb-8 rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
               <h2 className="mb-1 text-sm font-black uppercase tracking-wide text-red-700">
                 Add to {TAB_COPY[activeTab].label}
@@ -323,6 +430,64 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
                 <p className="mt-3 text-sm font-semibold text-gray-600">{statusMessage}</p>
               )}
             </div>
+            ) : editingCourseRow ? (
+              <div className="mb-8 rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
+                <h2 className="mb-1 text-sm font-black uppercase tracking-wide text-red-700">
+                  Edit Course Activity
+                </h2>
+                <p className="mb-4 text-xs font-medium text-gray-400">
+                  Record ID: {editingCourseRow["Record ID"]}
+                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {COURSE_ACTIVITY_EDIT_HEADERS.map((header) => (
+                    <div key={header}>
+                      <label className="mb-1 block text-xs font-bold text-gray-600">
+                        {header}
+                      </label>
+                      <input
+                        type="text"
+                        value={courseEditValues[header] || ""}
+                        onChange={(event) =>
+                          setCourseEditValues((current) => ({ ...current, [header]: event.target.value }))
+                        }
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveCourseRow}
+                    disabled={isSubmitting}
+                    className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+                  >
+                    <Icon name="check" className="h-4 w-4" />
+                    Save changes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingCourseRow(null);
+                      setCourseEditValues({});
+                    }}
+                    className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-black text-gray-700 transition hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+
+                {statusMessage && (
+                  <p className="mt-3 text-sm font-semibold text-gray-600">{statusMessage}</p>
+                )}
+              </div>
+            ) : statusMessage ? (
+              <p className="mb-6 rounded-xl border border-red-100 bg-white px-4 py-3 text-sm font-semibold text-gray-600">
+                {statusMessage}
+              </p>
+            ) : null}
 
             {/* Existing rows */}
             <div className="rounded-2xl border border-red-100 bg-white shadow-sm">
@@ -356,6 +521,17 @@ function AdminConsole({ userEmail }: { userEmail: string }) {
                             </td>
                           ))}
                           <td className="px-5 py-3 text-right">
+                            {isCourseActivitiesTab && (
+                              <button
+                                type="button"
+                                onClick={() => handleEditCourseRow(row)}
+                                disabled={isSubmitting}
+                                className="mr-2 rounded-lg p-2 text-slate-500 transition hover:bg-slate-50 disabled:opacity-40"
+                                aria-label="Edit row"
+                              >
+                                <Icon name="edit" className="h-4 w-4" />
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => handleDeleteRow(row)}

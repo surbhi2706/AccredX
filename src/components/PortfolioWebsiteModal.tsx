@@ -45,6 +45,7 @@ export default function PortfolioWebsiteModal({
       const email = profile?.officialEmail || "";
       const phone = profile?.phoneNumber || "";
       const address = profile?.officeAddress || "";
+      const linkedinUrl = profile?.linkedinUrl || "";
       const bio = profile?.bio || "A passionate educator, researcher, and professional dedicated to advancing knowledge and fostering innovation.";
       const profilePictureUrl = profile?.profilePictureUrl
         ? new URL(profile.profilePictureUrl, window.location.origin).href
@@ -814,7 +815,7 @@ export default function PortfolioWebsiteModal({
           ${email ? `<div class="hero-meta-card"><strong>Email</strong><span>${email}</span></div>` : ''}
           ${phone ? `<div class="hero-meta-card"><strong>Phone</strong><span>${phone}</span></div>` : ''}
           ${address ? `<div class="hero-meta-card"><strong>Office</strong><span>${address}</span></div>` : ''}
-          ${profile.linkedinUrl ? `<div class="hero-meta-card"><strong>LinkedIn</strong><span><a href="${profile.linkedinUrl}" target="_blank" rel="noopener noreferrer" class="hero-link">${profile.linkedinUrl}</a></span></div>` : ''}
+          ${linkedinUrl ? `<div class="hero-meta-card"><strong>LinkedIn</strong><span><a href="${linkedinUrl}" target="_blank" rel="noopener noreferrer" class="hero-link">${linkedinUrl}</a></span></div>` : ''}
       </div>
       </div>
 
