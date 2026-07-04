@@ -101,6 +101,8 @@ console.log("PAGE YEARS:", academicYears);
   const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
   const [savedMessage, setSavedMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [saveAction, setSaveAction] = useState<"clear" | "add-another">("add-another");
+  const [activityToDelete, setActivityToDelete] = useState<SavedActivity | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingActivities, setIsLoadingActivities] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -291,9 +293,14 @@ console.log("PAGE YEARS:", academicYears);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  async function handleDeleteActivity(item: SavedActivity) {
-    const confirmed = window.confirm(`Delete "${item.activityType}"?`);
-    if (!confirmed) return;
+  function handleDeleteActivity(item: SavedActivity) {
+    setActivityToDelete(item);
+  }
+
+  async function confirmDeleteActivity() {
+    if (!activityToDelete) return;
+    const item = activityToDelete;
+    setActivityToDelete(null);
 
     setSavedActivities((current) => current.filter((a) => a.id !== item.id));
 
@@ -410,6 +417,13 @@ console.log("PAGE YEARS:", academicYears);
         setSavedMessage(`Activity ${editingActivity ? 'updated' : 'saved'} successfully.`);
       }
 
+      if (saveAction === "clear") {
+        setYear("");
+        setCategory("");
+        setActivity("");
+        setSelectedDetailedActivity(null);
+      }
+
       setEvidenceFile(null);
       setEvidenceFileName("");
       setFormValues({});
@@ -497,6 +511,7 @@ console.log("PAGE YEARS:", academicYears);
   onEvidenceChange={handleEvidenceChange}
   onFieldChange={handleFieldChange}
   onSubmit={handleSubmit}
+  onSaveActionChange={(action) => setSaveAction(action)}
   onYearChange={(value) => {
     setYear(value);
     setSavedMessage("");
@@ -559,6 +574,38 @@ console.log("PAGE YEARS:", academicYears);
           onClose={() => setPreviewReportType(null)}
         />
       )}
+
+      {activityToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="p-6 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <Icon name="trash" className="h-7 w-7" />
+              </div>
+              <h3 className="text-xl font-black text-gray-900">Delete Activity?</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Are you sure you want to delete <span className="font-bold text-gray-800">"{activityToDelete.activityType}"</span>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex bg-gray-50 p-4 gap-3">
+              <button
+                type="button"
+                onClick={() => setActivityToDelete(null)}
+                className="flex-1 rounded-xl border border-gray-200 bg-white py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteActivity}
+                className="flex-1 rounded-xl bg-red-600 py-3 text-sm font-bold text-white transition hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -580,6 +627,7 @@ type AddActivityViewProps = {
   onEvidenceChange: (file: File | null) => void;
   onFieldChange: (fieldName: string, value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onSaveActionChange: (action: "clear" | "add-another") => void;
   onYearChange: (value: string) => void;
 };
 
@@ -600,6 +648,7 @@ function AddActivityView({
   onEvidenceChange,
   onFieldChange,
   onSubmit,
+  onSaveActionChange,
   onYearChange,
 }: AddActivityViewProps) {
   const academicYears = getAcademicYears();
@@ -711,14 +760,25 @@ function AddActivityView({
                   Required fields are marked in red.
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSaving}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-red-400"
-                >
-                  <Icon name="check" className="h-4.5 w-4.5" />
-                  {isSaving ? "Saving Activity..." : "Save Activity"}
-                </button>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    type="submit"
+                    onClick={() => onSaveActionChange("add-another")}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isSaving ? "Saving..." : "Save & Add Another"}
+                  </button>
+                  <button
+                    type="submit"
+                    onClick={() => onSaveActionChange("clear")}
+                    disabled={isSaving}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-red-100 transition hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-100 disabled:cursor-not-allowed disabled:bg-red-400"
+                  >
+                    <Icon name="check" className="h-4.5 w-4.5" />
+                    {isSaving ? "Saving..." : "Save & Clear"}
+                  </button>
+                </div>
               </div>
 
               {savedMessage ? (
