@@ -227,6 +227,83 @@
                 "evidenceFileId": "1B-w_9u4HPGGt5WSi5K3p2GWRIZwVa7_4",
                 "createdAt": "19 Jun 2026"
             }
+        ],
+        "siyaagrawal9506@gmail.com": [
+            {
+                "id": 1782015665565,
+                "academicYear": "2025-26",
+                "pmsCategory": "Teaching, Learning & Evaluation",
+                "pmsSection": "Classroom Teaching & Feedback",
+                "activityType": "Student Feedback",
+                "data": {
+                    "detailedActivity": "Student Feedback",
+                    "pmsSection": "Classroom Teaching & Feedback",
+                    "nbaCriterion": "Criterion 2",
+                    "nbaSubCriterion": "2.3 Teaching Learning Process",
+                    "courseName": "nptel",
+                    "averageFeedback": "5",
+                    "selfAssessedMarks": "19"
+                },
+                "evidenceFileName": "1.LPP-Basic Solutions.pdf",
+                "evidenceFileId": "1BiHCF_au9c-7nbrGyBcVHJIaoJDVltuk",
+                "createdAt": "21 Jun 2026"
+            },
+            {
+                "id": 1781626546580,
+                "academicYear": "2024-25",
+                "pmsCategory": "Teaching, Learning & Evaluation",
+                "pmsSection": "Teaching Innovation",
+                "activityType": "E-learning Content / LMS Material",
+                "data": {
+                    "detailedActivity": "E-learning Content / LMS Material",
+                    "pmsSection": "Teaching Innovation",
+                    "nbaCriterion": "Criterion 2",
+                    "nbaSubCriterion": "2.3 Teaching Learning Process",
+                    "contentTitle": "abs",
+                    "lmsName": "ssjs",
+                    "selfAssessedMarks": "12"
+                },
+                "evidenceFileName": "1.4.pdf",
+                "evidenceFileId": "1B8-rar_V0uyv7VQIftp2CtQ8zdUy9MQG",
+                "createdAt": "16 Jun 2026"
+            },
+            {
+                "id": 1781379801675,
+                "academicYear": "2024-25",
+                "pmsCategory": "Research & Academic Contributions",
+                "pmsSection": "Journal Publications",
+                "activityType": "Web of Science Publication",
+                "data": {
+                    "detailedActivity": "Web of Science Publication",
+                    "pmsSection": "Journal Publications",
+                    "nbaCriterion": "Criterion 5",
+                    "nbaSubCriterion": "5.2 Faculty Research & Publications",
+                    "paperTitle": "qwerty",
+                    "journalName": "asdfg",
+                    "selfAssessedMarks": "15"
+                },
+                "evidenceFileName": "5.5.pdf",
+                "evidenceFileId": "1AQ3k5z-HnylLDQ3QUVeOP-a6a-9CtgMG",
+                "createdAt": "14 Jun 2026"
+            },
+            {
+                "id": 1781379021481,
+                "academicYear": "2025-26",
+                "pmsCategory": "Skill Enhancement & Miscellaneous",
+                "pmsSection": "FDP / Training Programs Attended",
+                "activityType": "STTP Attended",
+                "data": {
+                    "detailedActivity": "STTP Attended",
+                    "pmsSection": "FDP / Training Programs Attended",
+                    "nbaCriterion": "Criterion 6",
+                    "nbaSubCriterion": "6.3 Faculty Development",
+                    "sttpTitle": "sttp",
+                    "selfAssessedMarks": "11"
+                },
+                "evidenceFileName": "1.1.pdf",
+                "evidenceFileId": "1IbsukaA_49X0NtXhsoUHzqqNsYPWsWHM",
+                "createdAt": "14 Jun 2026"
+            }
         ]
     }
 }
